@@ -34,8 +34,8 @@ To run the system, you must instantiate the game server and both player clients.
 The game server and player clients processes will stay alive until terminated.
 
 ## Injection Framework
-The behaviour of the the game engine and player clients is controlled via the configuration file *config/config.ini* and the 
-injection providers within *injections*.  
+This project uses [dependencyinjector](https://pypi.org/project/dependency-injector/) for the inversion-of-control pattern. The behaviour of the the game engine and player clients is controlled via the configuration file *config/config.ini* and the 
+injection providers within *injections/providers.py*  Please place all injection dependencies into this file.  
 
 ## Providing your own paddle controller
 The *paddles* package contains paddle controller implementations.  Add your implmementations here. A paddle contoller processes a GameState object and produces a 
