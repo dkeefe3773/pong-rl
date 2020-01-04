@@ -1,0 +1,51 @@
+syntax="proto3";
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+
+enum PaddleType
+{
+    option allow_alias = true;
+    NOT_SET = 0;
+    LEFT = 1;
+    RIGHT = 1;
+}
+
+message PlayerIdentifier
+{
+    // the name of the player plus the strategy name should uniquely identify the player
+    string player_name = 1;
+
+    // the name of the algorithm used that controls the paddle
+    string paddle_strategy_name = 2;
+
+    PaddleType paddle_type = 3;
+}
+
+message GameState
+{
+    google.protobuf.Timestamp state_time = 1;
+    uint64 state_iteration = 2;
+
+    // this should only be set when a player has won the game.
+    PlayerIdentifier winning_player = 3;
+}
+
+message PaddleAction
+{
+    PlayerIdentifier player_identifier = 1;
+}
+
+// This service will provide the game state to clients as well as accept paddle input commands
+service GameMaster
+{
+    // This is a hot stream of game state.  Stream will exhaust when a player loses a match.
+    rpc stream_game_state(PlayerIdentifier) returns (stream GameState) {}
+
+    // Let the game engine know that a player has registered to play.
+    rpc register_player(PlayerIdentifier) returns (google.protobuf.Empty) {}
+
+    // This provides the game engine a hot stream of paddle actions
+    rpc submit_paddle_actions(stream PaddleAction) returns (google.protobuf.Empty) {}
+}
