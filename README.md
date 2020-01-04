@@ -1,11 +1,27 @@
 # pong-rl
-This project provides a server side pong game engine and client side player controllers.  There are three separate applications:
+This is a python reinforcement learning project. The framework provides a server side pong game engine and client side player controllers.  There are three separate applications.
 1. Server Game Engine
 2. Player Left Client
 3. Player Right Client
 
 The server-client communication is through grpc.  The proto definitions for messages and services are within the *proto_idl* folder.
 To generate the compiled proto code run the *scripts/proto_builder.sh* bash script.  This will generate artifacts within the *proto_gen* package.
+
+## Setting up your environment
+All conda / pip dependencies are contained within the *pong_rl_env.yaml* file.
+To create your virtual conda environement for this project:
+
+`> conda env create -f pong_rl_env.yaml`
+
+`> conda activate pong_rl`
+
+If you need to add dependencies to your environment be sure to export the dependencies and check them into the project.
+`> conda env export > pong_rl_env.yaml`
+
+To refresh your environment:
+
+`> conda env update -f pong_rl_env.yaml`
+
 
 ## Running the system
 To run the system, you must instantiate the game server and both player clients.  This is achieved by invoking the python applications for each.
