@@ -1,102 +1,103 @@
-from abc import abstractmethod, ABC
+from abc import ABC
 from collections import namedtuple
-from typing import Tuple
 
+import numpy
+from shapely import affinity
 from shapely.geometry import Polygon, LineString
 from shapely.geometry.base import BaseGeometry
-from shapely import affinity
 
 Velocity = namedtuple('Velocity', ['vel_x', 'vel_y'])
 
+
 class Actor(ABC):
-    @abstractmethod
+    def __init__(self, name: str, shape: BaseGeometry, velocity: Velocity, collision_enabled: bool,
+                 rebound_enabled: bool):
+        self.name = name
+        self._shape = shape
+        self._velocity = velocity
+        self._collision_enabled = collision_enabled
+        self._rebound_enabled = rebound_enabled
+
     @property
     def shape(self) -> BaseGeometry:
-        pass
+        return self._shape
 
-    @abstractmethod
     @property
-    def velocity(self) -> Velocity:
-        pass
+    def velocity(self):
+        """
+        :return:  numpy version of the velocity
+        """
+        return numpy.array([self._velocity.vel_x, self._velocity.vel_y])
 
-    @abstractmethod
     @velocity.setter
-    def velocity(self, updated_velocity: Velocity):
-        pass
+    def velocity(self, updated_velocity_array: Velocity):
+        """
+        :param updated_velocity_array:  any structure having a first and second indexable element
+        :return: None
+        """
+        self._velocity = Velocity(updated_velocity_array[0], updated_velocity_array[1])
 
-    @abstractmethod
-    def apply_velocity(self):
-        pass
+    @property
+    def centroid(self):
+        """
+        :return:  The centroid of the shape as a numpy array
+        """
+        return numpy.array([self._shape.centroid.x, self._shape.centroid.y])
 
-    @abstractmethod
+    def move_forward(self, relative_distance=1):
+        """
+        Moves object forward along its velocity vector
+        :param relative_distance: The distance to move the object along its velocity vector, relative to the length of the velocity vector
+               If None or not provided, will move the full length of the velocity vector
+        :return: None, mutates in place
+        """
+        if relative_distance is None or relative_distance >= 1:
+            x_offset = self._velocity.vel_x
+            y_offset = self._velocity.vel_y
+        else:
+            line_segment = LineString([self._shape.centroid, (self._velocity.vel_x, self._velocity.vel_y)])
+            interp_point = line_segment.interpolate(relative_distance, normalized=True)
+            x_offset = interp_point.x - self._shape.centroid.x
+            y_offset = interp_point.y - self._shape.centroid.y
+        self._shape = affinity.translate(self._shape, x_offset, y_offset)
+
+    def move_backward(self, relative_distance=1):
+        """
+        Moves object backwards along its velocity vector
+        :param relative_distance: The distance to move the object along its negative velocity vector, relative to the length of the velocity vector
+               If None or not provided, will move the full length of the velocity vector
+        :return: None, mutates in place
+        """
+        if relative_distance is None or relative_distance >= 1:
+            x_offset = self._velocity.vel_x
+            y_offset = self._velocity.vel_y
+        else:
+            line_segment = LineString([self._shape.centroid, (self._velocity.vel_x, self._velocity.vel_y)])
+            interp_point = line_segment.interpolate(relative_distance, normalized=True)
+            x_offset = interp_point.x - self._shape.centroid.x
+            y_offset = interp_point.y - self._shape.centroid.y
+        self._shape = affinity.translate(self._shape, -x_offset, -y_offset)
+
     def is_collision_enabled(self) -> bool:
         """
         :return:  True if collision detection is valid for this object
         """
-        pass
+        return self._collision_enabled
 
-    @abstractmethod
     def is_reboundable(self) -> bool:
         """
         :return:  True if this actor rebounds upon collision
         """
+        return self._rebound_enabled
 
-class MovingPolygon(Actor):
+
+class StationaryActor(Actor, ABC):
     """
-    Represents a polygon with a velocity
+    Represents an actor with a fixed zero velocity
     """
-    def __init__(self, polygon: Polygon, velocity: Velocity, collision_enabled: bool = True, rebound_enabled: bool = True):
-        self._shape = polygon
-        self._velocity = velocity
-        self.collision_enabled = collision_enabled
-        self.rebound_enabled = rebound_enabled
 
-    @property
-    def shape(self) -> Polygon:
-        return self._shape
-
-    @property
-    def velocity(self) -> Velocity:
-        return self._velocity
-
-    @velocity.setter
-    def velocity(self, updated_velocity: Velocity):
-        self._velocity = updated_velocity
-
-    def apply_velocity(self, relative_distance=1):
-        x_offset = 0
-        y_offset = 0
-        if relative_distance is None or relative_distance >= 1:
-            x_offset = self._velocity.vel_x
-            y_offset = self._velocity.vel_y
-            self._shape = affinity.translate(self._shape, xoff=self._velocity.vel_x, yoff=self._velocity.vel_y)
-        else:
-            line_segment = LineString([self._shape.centroid, (self._velocity.vel_x, self._velocity.vel_y)])
-            interp_point = line_segment.interpolate(relative_distance, normalized=True)
-            x_offset = x_interp - self._shape.centroid.x
-            y_offset = y_interp - self._shape.centroid.y
-        self._shape = affinity.translate(self._shape, x_offset, y_offset)
-
-
-    def is_collision_enabled(self) -> bool:
-        return self.collision_enabled
-
-    def is_reboundable(self) -> bool:
-        return self.rebound_enabled
-
-class StationaryPolygon(Actor):
-    """
-    Represents a polygon with a fixed zero velocity
-    """
-    def __init__(self, polygon: Polygon, collision_enabled: bool = True, rebound_enabled: bool = True):
-        self._shape = polygon
-        self._velocity = Velocity(0,0)
-        self.collision_enabled = collision_enabled
-        self.rebound_enabled = rebound_enabled
-
-    @property
-    def shape(self) -> Polygon:
-        return self._shape
+    def __init__(self, name: str, polygon: Polygon, collision_enabled: bool = True, rebound_enabled: bool = False):
+        super().__init__(name, polygon, Velocity(0, 0), collision_enabled, rebound_enabled)
 
     @property
     def velocity(self) -> Velocity:
@@ -106,20 +107,28 @@ class StationaryPolygon(Actor):
     def velocity(self, updated_velocity: Velocity):
         pass
 
-    def apply_velocity(self):
+    def move_forward(self, relative_distance=1):
         pass
 
-    def is_collision_enabled(self) -> bool:
-        return self.collision_enabled
-
-    def is_reboundable(self) -> bool:
-        return self.rebound_enabled
+    def move_backward(self, relative_distance=1):
+        pass
 
 
-class Paddle:
-    def __init__(self, moving_polyon: MovingPolygon):
-        self.moving_polygon = moving_polyon
+class Wall(StationaryActor):
+    def __init__(self, name: str, polygon: Polygon, collision_enabled: bool = True):
+        super().__init__(name, polygon, collision_enabled, rebound_enabled=False)
 
-class Ball:
-    def __init__(self, moving_polyon: MovingPolygon):
-        self.moving_polygon = moving_polyon
+
+class Net(StationaryActor):
+    def __init__(self, name: str, polygon: Polygon):
+        super().__init__(name, polygon, collision_enabled=False, rebound_enabled=False)
+
+
+class Paddle(Actor):
+    def __init__(self, name: str, polygon: Polygon, velocity: Velocity):
+        super().__init__(name, polygon, velocity, collision_enabled=True, rebound_enabled=False)
+
+
+class Ball(Actor):
+    def __init__(self, name: str, polygon: Polygon, velocity: Velocity):
+        super().__init__(name, polygon, velocity, collision_enabled=True, rebound_enabled=True)

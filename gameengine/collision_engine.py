@@ -2,14 +2,11 @@ import itertools
 from abc import ABC, abstractmethod
 from typing import List
 
-import shapely
-from shapely.geometry import LineString
 from shapely import affinity
+from shapely.geometry import LineString
 from shapely.geometry.base import BaseGeometry
 
 from gameengine.gameactors import Actor
-
-
 
 """
  Between every rendered frame, an object will move from its current position to the position defined by the 
@@ -19,6 +16,7 @@ from gameengine.gameactors import Actor
 """
 
 physics_frame_rate = 10
+
 
 def calculate_potential_collision(actor1: Actor, actor2: Actor) -> int:
     """
@@ -54,22 +52,26 @@ def calculate_potential_collision(actor1: Actor, actor2: Actor) -> int:
             return 1
     return 0
 
-class Collision_Engine:
-    def update_state(self, actors : List[Actor]):
+
+class GameCollisionEngine:
+    def update_state(self, actors: List[Actor]):
         # first lets see if there are any potential collisions
-        possible_collision_pairs = itertools.product(actors, actors)
+        possible_collision_pairs = itertools.combinations(actors, 2)
         any_possible_collision = any(map(calculate_potential_collision, *possible_collision_pairs))
 
         if not any_possible_collision:
-            for actor in actors:
-                actor.update_shape()
+            for actor in actors: actor.apply_velocity()
         else:
+            for frame_index in range(physics_frame_rate):
+                pass
 
+class ActorPairCollision(ABC):
+    @abstractmethod
+    def update_pair_state(self, actor1: Actor, actor2: Actor):
+        pass
 
-
-
-        for frame_index in range(physics_frame_rate):
-
-
+class NoOpPairCollision(ActorPairCollision):
+    def update_pair_state(self, actor1: Actor, actor2: Actor):
+        pass
 
 
