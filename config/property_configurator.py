@@ -52,6 +52,18 @@ class PlayerConfig(Config):
     def right_player_name(self) -> str:
         return Config.get_property_string('player', 'right_player_name')
 
+class PaddleConfig(Config):
+    @property
+    def max_speed(self) -> float:
+        return Config.get_property_float('paddle', 'max_paddle_speed')
+
+class BallConfig(Config):
+    @property
+    def max_speed(self) -> float:
+        return Config.get_property_float('ball', 'max_ball_speed')
+
 
 game_server_config = GameServerConfig()
 player_config = PlayerConfig()
+paddle_config = PaddleConfig()
+ball_config = BallConfig()

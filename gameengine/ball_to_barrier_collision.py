@@ -3,8 +3,6 @@ import math
 from operator import itemgetter
 
 import numpy
-import shapely
-from shapely import ops
 from shapely.geometry import Polygon, LineString
 
 from config import logging_configurator
@@ -12,6 +10,9 @@ from gameengine.collision_engine import ActorPairCollision
 from gameengine.gameactors import Actor, Ball
 
 logger = logging_configurator.get_logger(__name__)
+
+to_euclidean_transform = numpy.array([[1, 0], [0, -1]])  # transforms canvas coordinates to euclidean standard
+to_canvas_transform = numpy.linalg.inv(to_euclidean_transform) # transforms standard coordinates to canvas
 
 
 def line_segment_rebound(ball: Ball, line_segment: LineString):
@@ -29,15 +30,12 @@ def line_segment_rebound(ball: Ball, line_segment: LineString):
     # the normal vector is calculated differently.  I keep getting sign errors so rather than figuring it out,
     # lets just transform the objects and velocities of the problem into standard euclidean for the calculation then
     # we can inverse transform at the end.
-    to_euclidean_transform = numpy.array([[1,0], [0,-1]])   # transforms canvas coordinates to euclidean standard
-    to_canvas_transform = numpy.linalg.inv(to_euclidean_transform)
-
     vel_canvas = ball.velocity
     vel_standard = to_euclidean_transform.dot(vel_canvas)
     segment_coords_canvas_matrix = numpy.array(list(line_segment.coords)).transpose()  # columns are the coordinates
     segment_coords_standard_matrix = to_euclidean_transform.dot(segment_coords_canvas_matrix)
-    coords_standard_list = [tuple(segment_coords_standard_matrix[:,0]), tuple(segment_coords_standard_matrix[:,1])]
-    coords_standard_list.sort(key=itemgetter(0)) # sort points by the x-coord
+    coords_standard_list = [tuple(segment_coords_standard_matrix[:, 0]), tuple(segment_coords_standard_matrix[:, 1])]
+    coords_standard_list.sort(key=itemgetter(0))  # sort points by the x-coord
     delta_x = coords_standard_list[1][0] - coords_standard_list[0][0]
     phi = math.acos(delta_x / line_segment.length)  # this is the angle from horizontal
 
@@ -49,6 +47,7 @@ def line_segment_rebound(ball: Ball, line_segment: LineString):
     rebound_vel_standard = vel_standard - 2 * numpy.dot(vel_standard, normal) * normal
     rebound_vel_canvas = to_canvas_transform.dot(rebound_vel_standard)
     return rebound_vel_canvas
+
 
 class IncidentAngleRebound(ActorPairCollision):
     def update_pair_state(self, ball: Actor, barrier: Actor):
@@ -84,4 +83,3 @@ class IncidentAngleRebound(ActorPairCollision):
         ball.velocity = line_segment_rebound(ball, closest_line_segment)
         logger.debug(f"Ball velocity after line segment rebound {ball.velocity}")
 
-        #nearest_ball_point, nearest_poly_point = shapely.ops.nearest_points(ball.shape, barrier.shape)

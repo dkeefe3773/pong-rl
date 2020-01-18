@@ -5,7 +5,7 @@ import shapely
 from shapely import affinity
 from shapely.geometry import Polygon
 
-from gameengine.gameactors import StationaryPolygon, Paddle, Actor, Wall, Net
+from gameengine.gameactors import StationaryActor, Paddle, Actor, Wall, Net
 
 
 def calculate_collision_distance(actor1: Actor, actor2: Actor) -> float:
