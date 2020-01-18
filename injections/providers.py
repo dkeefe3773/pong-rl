@@ -39,6 +39,9 @@ class PlayerProviders(containers.DeclarativeContainer):
                                        paddle_type=PaddleType.RIGHT,
                                        paddle_controller=PaddleProviders.right_stationary_paddle)
 
+class GameArenaProvider(containers.DeclarativeContainer):
+    arena = providers.Singleton(Arena)
+
 
 class GameEngineProviders(containers.DeclarativeContainer):
     """

@@ -1,4 +1,5 @@
 import itertools
+import math
 import random
 from typing import List
 
@@ -17,7 +18,7 @@ PADDLE_WIDTH = property_configurator.game_arena_config.paddle_width
 
 WHITE_BALL_RADIUS = property_configurator.game_arena_config.white_ball_radius
 MAX_BALL_START_ANGLE = property_configurator.game_arena_config.max_ball_starting_angle
-STARTING_BALL_SPEED = property_configurator.game_arena_config.
+STARTING_BALL_SPEED = property_configurator.game_arena_config.starting_ball_speed
 
 class Arena:
     def __init__(self, arena_width: int, arena_height: int, line_thickness: int, other_actors: List[Actor] = None):
@@ -29,6 +30,7 @@ class Arena:
         """
         self.arena_width = arena_width
         self.arena_height = arena_height
+        self.arena_center = numpy.array([int(arena_width / 2), int(arena_height / 2)])
 
         self.top_wall = Wall(StationaryActor(shapely.geometry.box(0, 0, arena_width, line_thickness),
                                              collision_enabled=True, rebound_enabled=False))
@@ -40,13 +42,13 @@ class Arena:
             affinity.translate(shapely.geometry.box(0, 0, 1, arena_height), xoff=arena_width / 2),
             collision_enabled=False, rebound_enabled=False))
 
-        self.make_primary_ball()
-        self.make_paddles()
-        self.arena_center = numpy.array([int(arena_width / 2), int(arena_height / 2)])
-
         self.actors = [self.top_wall, self.bottom_wall, self.center_net, self.paddles[0], self.paddles[1]]
         if other_actors:
             self.actors.extend(other_actors)
+
+        self.make_primary_ball()
+        self.make_paddles()
+        self.reset_starting_positions()
 
     def reset_starting_positions(self):
         """
@@ -63,12 +65,10 @@ class Arena:
             offset_to_center = ball.centroid - self.arena_center
             ball.translate(offset_to_center[0], offset_to_center[1])
             max_angle_degrees = MAX_BALL_START_ANGLE.to(ureg.angular_degress).magnitude
-            random_angle = random.randint(0, max_angle_degrees) * ureg.angular_degree
-
-
-
-
-
+            random_angle = random.randint(0, math.fabs(max_angle_degrees)) * ureg.angular_degree
+            vel_x = STARTING_BALL_SPEED * math.cos(random_angle.to_base_units()) * random.choice([-1,1])
+            vel_y = STARTING_BALL_SPEED * math.sin(random_angle.to_base_units()) * random.choice([-1,1])
+            ball.velocity = (vel_x, vel_y)
 
     def make_primary_ball(self):
         ball_shape = shapely.geometry.Point(self.arena_width / 2, self.arena_height / 2).buffer(WHITE_BALL_RADIUS)

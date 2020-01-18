@@ -78,6 +78,18 @@ class GameArenaConfig(Config):
        """
        return Config.get_property_int('game_arena', 'max_ball_starting_angle_degress') * ureg.angular_degree
 
+   @property
+   def starting_ball_speed(self) -> int:
+       return Config.get_property_int('game_arena', 'starting_ball_speed')
+
+   @property
+   def arena_width(self) -> int:
+       return Config.get_property_int('game_arena', 'arena_width')
+
+   @property
+   def arena_height(self) -> int:
+       return Config.get_property_int('game_arena', 'arena_height')
+
 class GameEngineConfig(Config):
     @property
     def max_speed(self) -> int:
