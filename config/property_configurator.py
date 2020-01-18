@@ -54,6 +54,29 @@ class PlayerConfig(Config):
     def right_player_name(self) -> str:
         return Config.get_property_string('player', 'right_player_name')
 
+class GameArenaConfig(Config):
+   @property
+   def paddle_offset(self) -> int:
+       return Config.get_property_int('game_arena', 'paddle_offset')
+
+   @property
+   def paddle_width(self) -> int:
+       return Config.get_property_int('game_arena', 'paddle_width')
+
+   @property
+   def paddle_height(self) -> int:
+       return Config.get_property_int('game_arena', 'paddle_height')
+
+   @property
+   def white_ball_radius(self) -> int:
+       return Config.get_property_int('game_arena', 'white_ball_radius')
+
+   @property
+   def max_ball_starting_angle(self) -> ureg.Quantity:
+       """
+       :return: The angle quantity representing the maximum starting angle a ball can have
+       """
+       return Config.get_property_int('game_arena', 'max_ball_starting_angle_degress') * ureg.angular_degree
 
 class GameEngineConfig(Config):
     @property
@@ -113,3 +136,4 @@ game_server_config = GameServerConfig()
 player_config = PlayerConfig()
 game_engine_config = GameEngineConfig()
 ball_paddle_collision_config = ClassicPongCollisionConfig()
+game_arena_config = GameArenaConfig()

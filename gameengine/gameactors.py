@@ -23,8 +23,8 @@ class Actor(ABC):
         self._rebound_enabled = rebound_enabled
         self.throttle_velocity()
 
-    @abstractmethod
     @property
+    @abstractmethod
     def speed_bound(self) -> Tuple[int, int]:
         """
         :return: The (miniumum, maximum) pixels the actor can move between consecutive frames
@@ -56,7 +56,7 @@ class Actor(ABC):
         return numpy.array([self._velocity.vel_x, self._velocity.vel_y])
 
     @velocity.setter
-    def velocity(self, updated_velocity_array: Velocity):
+    def velocity(self, updated_velocity_array: Tuple[float, float]):
         """
         :param updated_velocity_array:  any structure having a first and second indexable element
         :return: None
@@ -86,7 +86,7 @@ class Actor(ABC):
             interp_point = line_segment.interpolate(relative_distance, normalized=True)
             x_offset = interp_point.x - self._shape.centroid.x
             y_offset = interp_point.y - self._shape.centroid.y
-        self._shape = affinity.translate(self._shape, x_offset, y_offset)
+        self.translate(x_offset, y_offset)
 
     def move_backward(self, relative_distance=1):
         """
@@ -103,7 +103,16 @@ class Actor(ABC):
             interp_point = line_segment.interpolate(relative_distance, normalized=True)
             x_offset = interp_point.x - self._shape.centroid.x
             y_offset = interp_point.y - self._shape.centroid.y
-        self._shape = affinity.translate(self._shape, -x_offset, -y_offset)
+        self.translate(-x_offset, -y_offset)
+
+    def translate(self, x_offset: float, y_offset: float) -> None:
+        """
+        Shape will be translated by the offset amount
+        :param x_offset: offset in x direction
+        :param y_offset: offset in y direction
+        :return: None
+        """
+        self._shape = affinity.translate(self._shape, x_offset, y_offset)
 
     def is_collision_enabled(self) -> bool:
         """
