@@ -3,7 +3,7 @@ from typing import Tuple, Any
 import numpy
 
 from config import logging_configurator
-from gameengine.collision_engine import ActorPairCollision
+from gameengine.collision_engine import ActorPairCollidor
 from gameengine.gameactors import Actor, Ball
 
 logger = logging_configurator.get_logger(__name__)
@@ -31,7 +31,7 @@ def billiard_ball_rebound(ball1: Ball, ball2: Ball) -> Tuple[Any, Any]:
     rebound_v2 = ball2.velocity - (2*mass_1/total_mass * numpy.dot(delta_v21, delta_x21) / delta_x21_norm**2) * delta_x21
     return rebound_v1, rebound_v2
 
-class BilliardBallModel(ActorPairCollision):
+class BilliardBallCollider(ActorPairCollidor):
     def update_pair_state(self, actor1: Actor, actor2: Actor):
         if not isinstance(actor1, Ball) or not isinstance(actor2, Ball):
             logger.error("BilliardBallModel called with non-ball actors.  Not updating state")

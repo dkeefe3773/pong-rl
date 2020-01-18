@@ -6,7 +6,7 @@ import numpy
 from shapely.geometry import Polygon, LineString
 
 from config import logging_configurator
-from gameengine.collision_engine import ActorPairCollision
+from gameengine.collision_engine import ActorPairCollidor
 from gameengine.gameactors import Actor, Ball
 
 logger = logging_configurator.get_logger(__name__)
@@ -49,7 +49,7 @@ def line_segment_rebound(ball: Ball, line_segment: LineString):
     return rebound_vel_canvas
 
 
-class IncidentAngleRebound(ActorPairCollision):
+class IncidentAngleRebounder(ActorPairCollidor):
     def update_pair_state(self, ball: Actor, barrier: Actor):
         if not isinstance(ball, Ball) or barrier.is_reboundable() \
                 or not isinstance(barrier.shape, Polygon) \
