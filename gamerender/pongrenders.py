@@ -44,8 +44,8 @@ ScoreFontImages = namedtuple("ScoreFontImages",
 
 class CachedScoreFontImages:
     def __init__(self, scorecard: StandardScoreCard, fontconfig: FontConfig):
-        self._fontconfig = fontconfig
-        self._font = pygame.font.SysFont(fontconfig.name,
+        self.fontconfig = fontconfig
+        self.font = pygame.font.SysFont(fontconfig.name,
                                         fontconfig.size,
                                         fontconfig.is_bold,
                                         fontconfig.is_italic)
@@ -80,23 +80,42 @@ class CachedScoreFontImages:
             self._paddle_strategy_name = name
             self._update_strategy_image()
 
-    
+    @property
+    def match_points(self) -> int:
+        return self._match_points
+
+    @match_points.setter
+    def match_points(self, points: int):
+        if points != self._match_points:
+            self._match_points = points
+            self._update_match_points_image()
+
+    @property
+    def total_points(self) -> int:
+        return self._total_points
+
+    @total_points.setter
+    def total_points(self, points: int):
+        if points != self._total_points:
+            self._total_points = points
+            self._update_total_points_image()
+
+    @property
+    def matches_won(self) -> int:
+        return self._matches_won
+
+    @matches_won.setter
+    def matches_won(self, count: int):
+        if count != self._matches_won:
+            self._matches_won = count
+            self._update_matches_won_image()
 
     def update(self, scorecard: StandardScoreCard):
         self.player_name = scorecard.player_identifier.player_name
-
-        if scorecard.player_identifier.player_name != self.player_name:
-            self.player_name = scorecard.player_identifier.player_name
-            self._update_name_image()
-        if scorecard.player_identifier.paddle_strategy_name != self.paddle_strategy_name:
-            self.paddle_strategy_name = scorecard.player_identifier.paddle_strategy_name
-            self._update_strategy_image()
-        if scorecard.current_match_points_won != self.match_points:
-            self.match_points = scorecard.current_match_points_won
-            self._update_match_points_image()
-        if scorecard.total_points_won != self.total_points:
-            self.total_points = scorecard.total_points_won
-            self._update_total_points_image()
+        self.paddle_strategy_name = scorecard.player_identifier.paddle_strategy_name
+        self.match_points = scorecard.current_match_points_won
+        self.total_points = scorecard.total_points_won
+        self.matches_won = scorecard.matches_won
 
     def _update_name_image(self):
         self.name_image = self.font.render(f"Player Name: {self.player_name}", color=self.fontconfig.color)
