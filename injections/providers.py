@@ -2,6 +2,7 @@ import dependency_injector.containers as containers
 import dependency_injector.providers as providers
 
 from config import property_configurator
+from gameengine.arena import Arena
 from gameengine.ball_to_ball_collision import BilliardBallCollider
 from gameengine.ball_to_barrier_collision import IncidentAngleRebounder
 from gameengine.ball_to_paddle_collision import update_white_ball, CollisionStrategyByColor, BallPaddleCollider
@@ -40,7 +41,11 @@ class PlayerProviders(containers.DeclarativeContainer):
                                        paddle_controller=PaddleProviders.right_stationary_paddle)
 
 class GameArenaProvider(containers.DeclarativeContainer):
-    arena = providers.Singleton(Arena)
+    arena = providers.Singleton(Arena,
+                                arena_height = property_configurator.game_arena_config.arena_height,
+                                arena_width = property_configurator.game_arena_config.arena_width)
+
+
 
 
 class GameEngineProviders(containers.DeclarativeContainer):

@@ -1,6 +1,6 @@
 from configparser import ConfigParser
 from pathlib import Path
-from typing import Any
+from typing import Any, Tuple
 
 from utils.measures import ureg
 
@@ -143,9 +143,36 @@ class ClassicPongCollisionConfig(Config):
         """
         return Config.get_property_float('ball_paddle_collision', 'max_angle_degress') * ureg.angular_degree
 
+class GameRendererConfig(Config):
+    @property
+    def paddle_color(self) -> Tuple[int, int, int]:
+        rgb_string = Config.get_property_string('game_renderer', 'paddle_color')
+        return eval(rgb_string)
+
+    @property
+    def score_board_font_name(self) -> str:
+        return Config.get_property_string('game_renderer', 'score_board_font')
+
+    @property
+    def score_board_font(self) -> Tuple[str, int, Tuple[int,int,int]]:
+        """
+        :return: a 3-tuple (font_name, font_size, font_color)
+        """
+        font_specifier_string = Config.get_property_string('game_renderer', 'score_board_font')
+        return eval(font_specifier_string)
+
+    @property
+    def registration_font(self) -> Tuple[str, int, Tuple[int,int,int]]:
+        """
+        :return: a 3-tuple (font_name, font_size, font_color)
+        """
+        rgb_string = Config.get_property_string('game_renderer', 'registration_font')
+        return eval(rgb_string)
+
 
 game_server_config = GameServerConfig()
 player_config = PlayerConfig()
 game_engine_config = GameEngineConfig()
 ball_paddle_collision_config = ClassicPongCollisionConfig()
 game_arena_config = GameArenaConfig()
+game_render_config = GameRendererConfig()

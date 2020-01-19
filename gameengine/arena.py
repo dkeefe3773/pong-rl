@@ -21,11 +21,10 @@ MAX_BALL_START_ANGLE = property_configurator.game_arena_config.max_ball_starting
 STARTING_BALL_SPEED = property_configurator.game_arena_config.starting_ball_speed
 
 class Arena:
-    def __init__(self, arena_width: int, arena_height: int, line_thickness: int, other_actors: List[Actor] = None):
+    def __init__(self, arena_width: int, arena_height: int, other_actors: List[Actor] = None):
         """
         :param arena_width:    width in pixels
         :param arena_height:   height in pixels
-        :param line_thickness: in pixels
         :param actors:         any other shapes besides the white ball, paddles, and arena bounds
         """
         self.arena_width = arena_width
