@@ -6,7 +6,8 @@ from gameengine.arena import Arena
 from gameengine.ball_to_ball_collision import BilliardBallCollider
 from gameengine.ball_to_barrier_collision import IncidentAngleRebounder
 from gameengine.ball_to_paddle_collision import update_white_ball, CollisionStrategyByColor, BallPaddleCollider
-from gameengine.collision_engine import CollisionPairHandlerFactory, GameCollisionEngine
+from gameengine.collision_engine import CollisionPairHandlerFactory, DefaultGameCollisionEngine
+from gamerender.pongrenders import DefaultPongRenderer
 from gameserver.pong_server import PongServer
 from gameserver.pong_servicer import DummyPongServicer
 from paddles.do_nothing import DoNothingPaddle
@@ -40,12 +41,9 @@ class PlayerProviders(containers.DeclarativeContainer):
                                        paddle_type=PaddleType.RIGHT,
                                        paddle_controller=PaddleProviders.right_stationary_paddle)
 
+
 class GameArenaProvider(containers.DeclarativeContainer):
-    arena = providers.Singleton(Arena,
-                                arena_height = property_configurator.game_arena_config.arena_height,
-                                arena_width = property_configurator.game_arena_config.arena_width)
-
-
+    default_arena = providers.Singleton(Arena)
 
 
 class GameEngineProviders(containers.DeclarativeContainer):
@@ -53,27 +51,34 @@ class GameEngineProviders(containers.DeclarativeContainer):
     Container for game engine objects
     """
     # ball to ball collisions
-    ball_ball_collision_provider = providers.Singleton(BilliardBallCollider)
+    ball_ball_collision = providers.Singleton(BilliardBallCollider)
 
     # ball to barrier collisions
-    ball_barrier_collision_provider = providers.Singleton(IncidentAngleRebounder)
+    ball_barrier_collision = providers.Singleton(IncidentAngleRebounder)
 
     # ball to paddle collisions
-    white_ball_paddle_collision_provider = providers.Callable(update_white_ball)
-    collision_strategy_by_color_provider = providers.Singleton(CollisionStrategyByColor,
-                                                      white_ball_callable_provider=white_ball_paddle_collision_provider.delegate())
-    ball_paddle_collision_provider = providers.Singleton(BallPaddleCollider,
-                                                         collision_strategy_by_color_provider)
+    white_ball_paddle_collision = providers.Callable(update_white_ball)
+    collision_strategy_by_color = providers.Singleton(CollisionStrategyByColor,
+                                                      white_ball_callable_provider=white_ball_paddle_collision.delegate())
+    ball_paddle_collision = providers.Singleton(BallPaddleCollider,
+                                                classic_paddle_collision_factory=collision_strategy_by_color)
 
-    collision_pair_handler_factory_provider = providers.Singleton(CollisionPairHandlerFactory,
-                                                                  ball_to_ball_handler = ball_ball_collision_provider,
-                                                                  ball_to_barrier_handler = ball_barrier_collision_provider,
-                                                                  ball_to_paddler_handler = ball_paddle_collision_provider)
+    collision_pair_handler_factory = providers.Singleton(CollisionPairHandlerFactory,
+                                                         ball_to_ball_handler=ball_ball_collision,
+                                                         ball_to_barrier_handler=ball_barrier_collision,
+                                                         ball_to_paddler_handler=ball_paddle_collision)
 
-    game_engine_provider = providers.Singleton(GameCollisionEngine,
-                                               collision_pair_handler_factory = collision_pair_handler_factory_provider)
+    game_engine = providers.Singleton(DefaultGameCollisionEngine,
+                                      collision_pair_handler_factory=collision_pair_handler_factory)
 
 
+class GameRendererProviders(containers.DeclarativeContainer):
+    """
+    Container for game rendering objects
+    """
+    pong_renderer = providers.Factory(DefaultPongRenderer,
+                                      arena=GameArenaProvider.default_arena,
+                                      game_engine = GameEngineProviders.game_engine)
 
 class ServicerProviders(containers.DeclarativeContainer):
     """
