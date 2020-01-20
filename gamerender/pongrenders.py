@@ -1,9 +1,12 @@
+# to get rid of alsa sound errors: see https://raspberrypi.stackexchange.com/questions/83254/pygame-and-alsa-lib-error
+import os
+os.environ['SDL_AUDIODRIVER'] = 'dsp'
+
 from collections import namedtuple
 from threading import RLock
-from typing import Dict, Optional
+from typing import Dict, Optional, List
 
 import pygame
-# initialize pygame modules
 from pygame import font
 
 from config import logging_configurator
@@ -22,7 +25,7 @@ pygame.init()
 
 SCORE_BOARD_HEIGHT = 200
 META_DATA_HEIGHT = 20
-REGISTRATION_OFFSET_HORIZ = 50
+REGISTRATION_OFFSET_HORIZ = 10
 COMMENCEMENT_OFFSET_VERT = 100
 SEPARATOR = 5
 
@@ -35,11 +38,6 @@ GamePane = namedtuple("GamePane", ['surface', 'pos'])
 
 # player_id is expected to be PlayerIdentifer object and scorecard a StandardScoreCard
 RegisteredPlayer = namedtuple("RegisteredPlayer", ['player_id', 'scorecard'])
-
-# used to cache rendered font images for the score pane
-ScoreFontImages = namedtuple("ScoreFontImages",
-                             ['player_name', 'paddle_strategy_name', 'points_won_current', 'points_won_total',
-                              'matches_won'])
 
 
 class CachedScoreFontImages:
@@ -59,6 +57,15 @@ class CachedScoreFontImages:
         self.match_points_image: Optional[pygame.Surface] = None
         self.total_points_image: Optional[pygame.Surface] = None
         self.matches_won_image: Optional[pygame.Surface] = None
+        self._image_updated: bool = True
+
+    def ordered_images(self) -> List[pygame.Surface]:
+        return [self.name_image, self.paddle_strategy_name, self.match_points_image, self.total_points_image,
+                self.matches_won_image]
+
+    @property
+    def is_updated(self):
+        return self._image_updated
 
     @property
     def player_name(self) -> str:
@@ -69,6 +76,7 @@ class CachedScoreFontImages:
         if name != self._player_name:
             self._player_name = name
             self._update_name_image()
+            self._image_updated = True
 
     @property
     def paddle_strategy_name(self) -> str:
@@ -79,6 +87,7 @@ class CachedScoreFontImages:
         if name != self._paddle_strategy_name:
             self._paddle_strategy_name = name
             self._update_strategy_image()
+            self._image_updated = True
 
     @property
     def match_points(self) -> int:
@@ -89,6 +98,7 @@ class CachedScoreFontImages:
         if points != self._match_points:
             self._match_points = points
             self._update_match_points_image()
+            self._image_updated = True
 
     @property
     def total_points(self) -> int:
@@ -99,6 +109,7 @@ class CachedScoreFontImages:
         if points != self._total_points:
             self._total_points = points
             self._update_total_points_image()
+            self._image_updated = True
 
     @property
     def matches_won(self) -> int:
@@ -109,8 +120,10 @@ class CachedScoreFontImages:
         if count != self._matches_won:
             self._matches_won = count
             self._update_matches_won_image()
+            self._image_updated = True
 
     def update(self, scorecard: StandardScoreCard):
+        self.image_updated = False
         self.player_name = scorecard.player_identifier.player_name
         self.paddle_strategy_name = scorecard.player_identifier.paddle_strategy_name
         self.match_points = scorecard.current_match_points_won
@@ -131,8 +144,6 @@ class CachedScoreFontImages:
 
     def _update_matches_won_image(self):
         self.matches_won_image = self.font.render(f"Match Count: {self.matches_won}", color=self.fontconfig.color)
-
-
 
 
 class DefaultPongRenderer:
@@ -171,19 +182,17 @@ class DefaultPongRenderer:
         score_y_pos = 0
         metadata_y_pos = score_y_pos + SCORE_BOARD_HEIGHT + SEPARATOR
         arena_y_pos = metadata_y_pos + META_DATA_HEIGHT + SEPARATOR
-        self.scoreboard_pane = GamePane(pygame.Surface(self.arena.arena_width, SCORE_BOARD_HEIGHT), (0, score_y_pos))
-        self.metadata_pane = GamePane(pygame.Surface(self.arena.arena_width, META_DATA_HEIGHT), (0, metadata_y_pos))
-        self.arena_pane = GamePane(pygame.Surface(self.arena.arena_width, self.arena.arena_height), (0, arena_y_pos))
+        self.scoreboard_pane = GamePane(pygame.Surface((self.arena.arena_width, SCORE_BOARD_HEIGHT)), (0, score_y_pos))
+        self.metadata_pane = GamePane(pygame.Surface((self.arena.arena_width, META_DATA_HEIGHT)), (0, metadata_y_pos))
+        self.arena_pane = GamePane(pygame.Surface((self.arena.arena_width, self.arena.arena_height)), (0, arena_y_pos))
 
         # dict to track registerd players.  key is paddle type and value is registered player
         self.registered_player_by_paddle_type: Dict[PaddleType, RegisteredPlayer] = {}
-        self.left_player_cached_score_fonts: ScoreFontImages = ScoreFontImages()
-        self.right_player_cached_score_fonts: ScoreFontImages = ScoreFontImages()
+        self.cached_score_fonts_by_paddle_type: Dict[PaddleType, CachedScoreFontImages] = {}
 
         # specify positions for the registration notifications
-        self.player_left_registration_pos = ((REGISTRATION_OFFSET_HORIZ, self.canvas_height // 2))
-        self.player_right_registration_pos = (
-            (self.canvas_width // 2 + REGISTRATION_OFFSET_HORIZ, self.canvas_height // 2))
+        self.player_left_registration_pos = (REGISTRATION_OFFSET_HORIZ, 0)
+        self.player_right_registration_pos = (REGISTRATION_OFFSET_HORIZ, self.registration_font_info.size + SEPARATOR)
 
         # specify position for game commencement notification
         self.commencement_pos = ((self.canvas_width // 2), self.canvas_height // 2 + COMMENCEMENT_OFFSET_VERT)
@@ -203,7 +212,7 @@ class DefaultPongRenderer:
 
             if player.paddle_type in self.registered_player_by_paddle_type:
                 logger.warn(
-                    f"Cannot register player {player.name}-{player.paddle_strategy_name} because {player.paddle_type} already registered")
+                    f"Cannot register player {player.player_name}-{player.paddle_strategy_name} because {player.paddle_type} already registered")
                 return
 
             self.registered_player_by_paddle_type[player.paddle_type] = RegisteredPlayer(player,
@@ -211,9 +220,9 @@ class DefaultPongRenderer:
 
             for paddle_type, registered_player in self.registered_player_by_paddle_type.items():
                 player_info_str = ":".join(
-                    (registered_player.player_id.name, registered_player.player_id.paddle_strategy_name))
+                    (registered_player.player_id.player_name, registered_player.player_id.paddle_strategy_name))
                 registration_image = self.registration_font.render(f"Player {player_info_str} has registered",
-                                                                   color=self.registration_font_info.color)
+                                                                   True, self.registration_font_info.color)
                 font_pos = self.player_left_registration_pos if paddle_type is PaddleType.LEFT else self.player_right_registration_pos
                 self.canvas.blit(registration_image, font_pos)
             self.registration_closed = len(self.registered_player_by_paddle_type) == 2
@@ -229,7 +238,7 @@ class DefaultPongRenderer:
     def render_commencement(self):
         for countdown in reversed(range(3)):
             commenement_image = self.commencement_font.render(f"Pong Experience Beginning in {countdown}",
-                                                              color=self.commencement_font_info.color)
+                                                              True, self.commencement_font_info.color)
             self.canvas.blit(commenement_image, self.commencement_pos)
             pygame.time.delay(1000)
 
@@ -240,17 +249,41 @@ class DefaultPongRenderer:
 
     def update_score_pane(self):
         surface = self.scoreboard_pane.surface
-        surface.fill(game_render_config.color_config.score_color)
+        left_score_fonts = self.cached_score_fonts_by_paddle_type[PaddleType.LEFT]
+        right_score_fonts = self.cached_score_fonts_by_paddle_type[PaddleType.RIGHT]
+        if not left_score_fonts.is_updated or not right_score_fonts.is_updated:
+            return
 
-        pass
+        # wipe out what was there before
+        surface.fill(game_render_config.color_config.score_color)
+        spacer = self.scoreboard_font_info.size + SEPARATOR
+
+        # populate left hand side
+        x_start = 0
+        y_start = SEPARATOR
+        for font_image in left_score_fonts.ordered_images():
+            surface.blit(font_image, (x_start, y_start))
+            y_start += spacer
+
+        # populate right hand side
+        x_start = self.canvas_width // 2 + SEPARATOR
+        y_start = SEPARATOR
+        for font_image in right_score_fonts.ordered_images():
+            surface.blit(font_image, (x_start, y_start))
+            y_start += spacer
+        self.canvas.blit(surface, self.scoreboard_pane.pos)
 
     def update_meta_pane(self):
-        pass
+        surface = self.metadata_pane.surface
+        surface.fill(game_render_config.color_config.meta_color)
+        self.canvas.blit(surface, self.metadata_pane.pos)
 
     def update_arena_pane(self):
-        pass
+        surface = self.arena_pane.surface
+        surface.fill(game_render_config.color_config.arena_color)
+        self.canvas.blit(surface, self.arena_pane.pos)
 
-    def start_game(self, player_one: PlayerIdentifier, player_two: PlayerIdentifier):
+    def start_game(self):
         with game_lock:
             if not self.registration_closed:
                 logger.warn("Game cannot start until all players are registered")

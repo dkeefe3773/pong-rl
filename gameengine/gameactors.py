@@ -8,7 +8,7 @@ from shapely import affinity
 from shapely.geometry import Polygon, LineString
 from shapely.geometry.base import BaseGeometry
 
-from config import property_configurator
+from config.property_configurator import game_engine_config
 
 Velocity = namedtuple('Velocity', ['vel_x', 'vel_y'])
 
@@ -21,7 +21,6 @@ class Actor(ABC):
         self._velocity = velocity
         self._collision_enabled = collision_enabled
         self._rebound_enabled = rebound_enabled
-        self.throttle_velocity()
 
     @property
     @abstractmethod
@@ -37,12 +36,16 @@ class Actor(ABC):
         :return:  None
         """
         if not isinstance(self, StationaryActor):
-            min_vel, max_vel = self.speed_bound
             v_norm = numpy.linalg.norm(self.velocity)
+            if v_norm == 0:
+                return
+
+            min_vel, max_vel = self.speed_bound
             if v_norm > max_vel:
                 self.velocity = (max_vel / v_norm) * self.velocity
             elif v_norm < min_vel:
                 self.velocity = (min_vel / v_norm) * self.velocity
+
 
     @property
     def shape(self) -> BaseGeometry:
@@ -166,8 +169,10 @@ class Net(StationaryActor):
 class Paddle(Actor):
     def __init__(self, name: str, polygon: Polygon, velocity: Velocity):
         super().__init__(name, polygon, velocity, collision_enabled=True, rebound_enabled=False)
-        self._max_paddle_speed = property_configurator.game_engine_config.max_paddle_speed
-        self._min_paddle_speed = property_configurator.game_engine_config.min_paddle_speed
+        self._max_paddle_speed = game_engine_config.max_paddle_speed
+        self._min_paddle_speed = game_engine_config.min_paddle_speed
+        if numpy.linalg.norm(self.velocity) > 0:
+            self.throttle_velocity()
 
     @property
     def speed_bound(self) -> Tuple[int, int]:
@@ -188,13 +193,15 @@ class Ball(Actor):
         :param color:     the ball color.  Different color balls will have different collision models
         """
         super().__init__(name, polygon, velocity, collision_enabled=True, rebound_enabled=True)
+        self._max_ball_speed = game_engine_config.max_ball_speed
+        self._min_ball_speed = game_engine_config.min_ball_speed
         self.color = color
-        self._max_ball_speed = property_configurator.game_engine_config.max_ball_speed
-        self._min_ball_speed = property_configurator.game_engine_config.min_ball_speed
+        if numpy.linalg.norm(self.velocity) > 0:
+            self.throttle_velocity()
 
     @property
     def speed_bound(self) -> Tuple[int, int]:
-        return (self._min_ball_speed, self._max_ball_speed)
+        return self._min_ball_speed, self._max_ball_speed
 
 
 

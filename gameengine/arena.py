@@ -9,7 +9,7 @@ from shapely.geometry import Polygon
 
 from config import property_configurator
 from config.property_configurator import game_arena_config
-from gameengine.gameactors import Actor, Wall, Net, Paddle, Velocity, Ball
+from gameengine.gameactors import Actor, Wall, Net, Paddle, Velocity, Ball, BallColor
 from utils.measures import ureg
 
 PADDLE_OFFSET = property_configurator.game_arena_config.paddle_offset
@@ -43,12 +43,13 @@ class Arena:
                               polygon=affinity.translate(shapely.geometry.box(0, 0, 1, self.arena_height),
                                                          xoff=self.arena_width // 2))
 
-        self.actors = [self.top_wall, self.bottom_wall, self.center_net, self.paddles[0], self.paddles[1]]
-        if other_actors:
-            self.actors.extend(other_actors)
-
         self.make_primary_ball()
         self.make_paddles()
+
+        self.actors = [self.top_wall, self.bottom_wall, self.center_net, self.paddles[0], self.paddles[1],
+                       self.primary_ball]
+        if other_actors:
+            self.actors.extend(other_actors)
         self.reset_starting_positions()
 
     def reset_starting_positions(self):
@@ -65,7 +66,7 @@ class Arena:
         for ball in filter(lambda actor: isinstance(actor, Ball), self.actors):
             offset_to_center = ball.centroid - self.arena_center
             ball.translate(offset_to_center[0], offset_to_center[1])
-            max_angle_degrees = MAX_BALL_START_ANGLE.to(ureg.angular_degress).magnitude
+            max_angle_degrees = MAX_BALL_START_ANGLE.to(ureg.angular_degrees).magnitude
             random_angle = random.randint(0, math.fabs(max_angle_degrees)) * ureg.angular_degree
             vel_x = STARTING_BALL_SPEED * math.cos(random_angle.to_base_units()) * random.choice([-1, 1])
             vel_y = STARTING_BALL_SPEED * math.sin(random_angle.to_base_units()) * random.choice([-1, 1])
@@ -73,7 +74,7 @@ class Arena:
 
     def make_primary_ball(self):
         ball_shape = shapely.geometry.Point(self.arena_width / 2, self.arena_height / 2).buffer(WHITE_BALL_RADIUS)
-        self.primary_ball = Ball('primary_ball', ball_shape, Velocity(0, 0))
+        self.primary_ball = Ball('primary_ball', ball_shape, Velocity(0, 0), BallColor.WHITE)
 
     def make_paddles(self):
         left_paddle_poly = shapely.geometry.box(PADDLE_OFFSET,

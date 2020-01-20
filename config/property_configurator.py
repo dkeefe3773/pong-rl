@@ -63,7 +63,7 @@ class GameArenaConfig(Config):
 
     @property
     def paddle_width(self) -> int:
-        return Config.get_property_int('game_arena', 'paddle_width')
+        return Config.get_property_int('game_arena', 'paddle_thickness')
 
     @property
     def paddle_height(self) -> int:
@@ -78,7 +78,7 @@ class GameArenaConfig(Config):
         """
         :return: The angle quantity representing the maximum starting angle a ball can have
         """
-        return Config.get_property_int('game_arena', 'max_ball_starting_angle_degress') * ureg.angular_degree
+        return Config.get_property_int('game_arena', 'max_ball_starting_angle_degrees') * ureg.angular_degree
 
     @property
     def starting_ball_speed(self) -> int:

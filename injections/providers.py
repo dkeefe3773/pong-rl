@@ -66,7 +66,7 @@ class GameEngineProviders(containers.DeclarativeContainer):
     collision_pair_handler_factory = providers.Singleton(CollisionPairHandlerFactory,
                                                          ball_to_ball_handler=ball_ball_collision,
                                                          ball_to_barrier_handler=ball_barrier_collision,
-                                                         ball_to_paddler_handler=ball_paddle_collision)
+                                                         ball_to_paddle_handler=ball_paddle_collision)
 
     game_engine = providers.Singleton(DefaultGameCollisionEngine,
                                       collision_pair_handler_factory=collision_pair_handler_factory)

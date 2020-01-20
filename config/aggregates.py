@@ -8,7 +8,7 @@ class FontConfig:
         self.size = size
         self.color = color
         self._bold = bold
-        self._italic = talic
+        self._italic = italic
 
     @property
     def is_italic(self):
