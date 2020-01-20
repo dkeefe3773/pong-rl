@@ -41,8 +41,8 @@ RegisteredPlayer = namedtuple("RegisteredPlayer", ['player_id', 'scorecard'])
 
 
 class CachedScoreFontImages:
-    def __init__(self, scorecard: StandardScoreCard, fontconfig: FontConfig):
-        self.fontconfig = fontconfig
+    def __init__(self, scorecard: StandardScoreCard):
+        fontconfig = game_render_config.score_board_font
         self.font = pygame.font.SysFont(fontconfig.name,
                                         fontconfig.size,
                                         fontconfig.is_bold,
@@ -215,8 +215,9 @@ class DefaultPongRenderer:
                     f"Cannot register player {player.player_name}-{player.paddle_strategy_name} because {player.paddle_type} already registered")
                 return
 
-            self.registered_player_by_paddle_type[player.paddle_type] = RegisteredPlayer(player,
-                                                                                         StandardScoreCard(player))
+            scorecard = StandardScoreCard(player)
+            self.registered_player_by_paddle_type[player.paddle_type] = RegisteredPlayer(player, scorecard)
+            self.cached_score_fonts_by_paddle_type[player.paddle_type] = CachedScoreFontImages(scorecard)
 
             for paddle_type, registered_player in self.registered_player_by_paddle_type.items():
                 player_info_str = ":".join(

@@ -24,6 +24,10 @@ def test_game_render():
 
     time.sleep(5)
 
+    pong_renderer.start_game()
+
+    time.sleep(5)
+
 
 if __name__ == "__main__":
     test_game_render()
