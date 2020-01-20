@@ -1,5 +1,6 @@
 # to get rid of alsa sound errors: see https://raspberrypi.stackexchange.com/questions/83254/pygame-and-alsa-lib-error
 import os
+
 os.environ['SDL_AUDIODRIVER'] = 'dsp'
 
 from collections import namedtuple
@@ -10,7 +11,6 @@ import pygame
 from pygame import font
 
 from config import logging_configurator
-from config.aggregates import FontConfig
 from config.property_configurator import game_render_config
 from gameengine.arena import Arena
 from gameengine.collision_engine import GameCollisionEngine
@@ -23,10 +23,9 @@ logger = logging_configurator.get_logger(__name__)
 # apparently, if performance is an issue, you just initialize the modules you need, but not a problem right now
 pygame.init()
 
-SCORE_BOARD_HEIGHT = 200
-META_DATA_HEIGHT = 20
+SCORE_BOARD_HEIGHT = 150
+META_DATA_HEIGHT = 50
 REGISTRATION_OFFSET_HORIZ = 10
-COMMENCEMENT_OFFSET_VERT = 100
 SEPARATOR = 5
 
 registration_lock = RLock()
@@ -42,25 +41,25 @@ RegisteredPlayer = namedtuple("RegisteredPlayer", ['player_id', 'scorecard'])
 
 class CachedScoreFontImages:
     def __init__(self, scorecard: StandardScoreCard):
-        fontconfig = game_render_config.score_board_font
-        self.font = pygame.font.SysFont(fontconfig.name,
-                                        fontconfig.size,
-                                        fontconfig.is_bold,
-                                        fontconfig.is_italic)
-        self._player_name = scorecard.player_identifier.player_name
-        self._paddle_strategy_name = scorecard.player_identifier.paddle_strategy_name
-        self._match_points = scorecard.current_match_points_won
-        self._total_points = scorecard.total_points_won
-        self._matches_won = scorecard.matches_won
+        self.fontconfig = game_render_config.score_board_font
+        self.font = pygame.font.SysFont(self.fontconfig.name,
+                                        self.fontconfig.size,
+                                        self.fontconfig.is_bold,
+                                        self.fontconfig.is_italic)
+        self._player_name: Optional[str] = None
+        self._paddle_strategy_name: Optional[str] = None
+        self._match_points: Optional[int] = None
+        self._total_points: Optional[int] = None
+        self._matches_won: Optional[int] = None
         self.name_image: Optional[pygame.Surface] = None
         self.paddle_stategy_image: Optional[pygame.Surface] = None
         self.match_points_image: Optional[pygame.Surface] = None
         self.total_points_image: Optional[pygame.Surface] = None
         self.matches_won_image: Optional[pygame.Surface] = None
-        self._image_updated: bool = True
+        self.update(scorecard)
 
     def ordered_images(self) -> List[pygame.Surface]:
-        return [self.name_image, self.paddle_strategy_name, self.match_points_image, self.total_points_image,
+        return [self.name_image, self.paddle_stategy_image, self.match_points_image, self.total_points_image,
                 self.matches_won_image]
 
     @property
@@ -131,19 +130,19 @@ class CachedScoreFontImages:
         self.matches_won = scorecard.matches_won
 
     def _update_name_image(self):
-        self.name_image = self.font.render(f"Player Name: {self.player_name}", color=self.fontconfig.color)
+        self.name_image = self.font.render(f"Player Name: {self.player_name}", True, self.fontconfig.color)
 
     def _update_strategy_image(self):
-        self.name_image = self.font.render(f"Paddle Strategy: {self.paddle_strategy_name}", color=self.fontconfig.color)
+        self.paddle_stategy_image = self.font.render(f"Paddle Strategy: {self.paddle_strategy_name}", True, self.fontconfig.color)
 
     def _update_match_points_image(self):
-        self.match_points_image = self.font.render(f"Match Points: {self.match_points}", color=self.fontconfig.color)
+        self.match_points_image = self.font.render(f"Match Points: {self.match_points}", True, self.fontconfig.color)
 
     def _update_total_points_image(self):
-        self.total_points_image = self.font.render(f"Total Points: {self.total_points}", color=self.fontconfig.color)
+        self.total_points_image = self.font.render(f"Total Points: {self.total_points}", True,  self.fontconfig.color)
 
     def _update_matches_won_image(self):
-        self.matches_won_image = self.font.render(f"Match Count: {self.matches_won}", color=self.fontconfig.color)
+        self.matches_won_image = self.font.render(f"Match Count: {self.matches_won}", True,  self.fontconfig.color)
 
 
 class DefaultPongRenderer:
@@ -195,7 +194,7 @@ class DefaultPongRenderer:
         self.player_right_registration_pos = (REGISTRATION_OFFSET_HORIZ, self.registration_font_info.size + SEPARATOR)
 
         # specify position for game commencement notification
-        self.commencement_pos = ((self.canvas_width // 2), self.canvas_height // 2 + COMMENCEMENT_OFFSET_VERT)
+        self.commencement_pos = (0, self.canvas_height // 2)
 
         self.game_started: bool = False
         self.registration_closed: bool = False
@@ -237,11 +236,15 @@ class DefaultPongRenderer:
         # pygame.draw.rect(screen, white, ((0, 0), (self.screen_width, self.screen_height)), 20)
 
     def render_commencement(self):
-        for countdown in reversed(range(3)):
-            commenement_image = self.commencement_font.render(f"Pong Experience Beginning in {countdown}",
-                                                              True, self.commencement_font_info.color)
-            self.canvas.blit(commenement_image, self.commencement_pos)
+        blit_rectangle = None
+        for countdown in reversed(range(4)):
             pygame.time.delay(1000)
+            commencement_image = self.commencement_font.render(f"Pong Experience Beginning in ... {countdown}",
+                                                              True, self.commencement_font_info.color)
+            if blit_rectangle:
+                self.canvas.fill((0,0,0), blit_rectangle)
+            blit_rectangle = self.canvas.blit(commencement_image, self.commencement_pos)
+            pygame.display.update()
 
     def update_panes(self):
         self.update_score_pane()
