@@ -51,7 +51,7 @@ class GameMasterServicer(object):
     raise NotImplementedError('Method not implemented!')
 
   def submit_paddle_actions(self, request_iterator, context):
-    """This informs the game engine to move a paddle
+    """This provides the game engine a hot stream of paddle actions
     """
     context.set_code(grpc.StatusCode.UNIMPLEMENTED)
     context.set_details('Method not implemented!')

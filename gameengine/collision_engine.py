@@ -78,8 +78,19 @@ class CollisionPairHandlerFactory:
             handler = self.ball_to_barrier_handler
         return handler
 
+class GameCollisionEngine(ABC):
+    @abstractmethod
+    def update_state(self, actors: List[Actor]):
+        """
+        The game collision engine will be called upon between every frame render.  It's responsibility is
+        to move the actors according to their velocities and detect collisions.  When collisions are detected,
+        the game collision engine must update the state of the actors involved in the collision
+        :param actors:  a list of actors
+        :return: None
+        """
+        pass
 
-class GameCollisionEngine:
+class DefaultGameCollisionEngine(GameCollisionEngine):
     def __init__(self, collision_pair_handler_factory: CollisionPairHandlerFactory):
         self.collision_pair_handler_factory = collision_pair_handler_factory
 

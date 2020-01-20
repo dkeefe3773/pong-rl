@@ -11,7 +11,7 @@ from gameengine.collision_engine import ActorPairCollidor
 from gameengine.gameactors import Ball, Paddle, BallColor
 
 logger = logging_configurator.get_logger(__name__)
-MAX_ANGLE = property_configurator.classic_pong_collision_config.max_angle_quantity
+MAX_ANGLE = property_configurator.ball_paddle_collision_config.max_angle_quantity
 
 
 def update_white_ball(ball: Ball, paddle: Paddle):

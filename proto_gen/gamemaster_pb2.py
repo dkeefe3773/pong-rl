@@ -22,7 +22,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x10gamemaster.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"g\n\x10PlayerIdentifier\x12\x13\n\x0bplayer_name\x18\x01 \x01(\t\x12\x1c\n\x14paddle_strategy_name\x18\x02 \x01(\t\x12 \n\x0bpaddle_type\x18\x03 \x01(\x0e\x32\x0b.PaddleType\"\x7f\n\tGameState\x12.\n\nstate_time\x18\x01 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12\x17\n\x0fstate_iteration\x18\x02 \x01(\x04\x12)\n\x0ewinning_player\x18\x03 \x01(\x0b\x32\x11.PlayerIdentifier\"<\n\x0cPaddleAction\x12,\n\x11player_identifier\x18\x01 \x01(\x0b\x32\x11.PlayerIdentifier*2\n\nPaddleType\x12\x0b\n\x07NOT_SET\x10\x00\x12\x08\n\x04LEFT\x10\x01\x12\t\n\x05RIGHT\x10\x01\x1a\x02\x10\x01\x32\xc8\x01\n\nGameMaster\x12\x36\n\x11stream_game_state\x12\x11.PlayerIdentifier\x1a\n.GameState\"\x00\x30\x01\x12>\n\x0fregister_player\x12\x11.PlayerIdentifier\x1a\x16.google.protobuf.Empty\"\x00\x12\x42\n\x15submit_paddle_actions\x12\r.PaddleAction\x1a\x16.google.protobuf.Empty\"\x00(\x01\x62\x06proto3')
+  serialized_pb=_b('\n\x10gamemaster.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"g\n\x10PlayerIdentifier\x12\x13\n\x0bplayer_name\x18\x01 \x01(\t\x12\x1c\n\x14paddle_strategy_name\x18\x02 \x01(\t\x12 \n\x0bpaddle_type\x18\x03 \x01(\x0e\x32\x0b.PaddleType\"\x7f\n\tGameState\x12.\n\nstate_time\x18\x01 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12\x17\n\x0fstate_iteration\x18\x02 \x01(\x04\x12)\n\x0ewinning_player\x18\x03 \x01(\x0b\x32\x11.PlayerIdentifier\"<\n\x0cPaddleAction\x12,\n\x11player_identifier\x18\x01 \x01(\x0b\x32\x11.PlayerIdentifier*.\n\nPaddleType\x12\x0b\n\x07NOT_SET\x10\x00\x12\x08\n\x04LEFT\x10\x01\x12\t\n\x05RIGHT\x10\x02\x32\xc8\x01\n\nGameMaster\x12\x36\n\x11stream_game_state\x12\x11.PlayerIdentifier\x1a\n.GameState\"\x00\x30\x01\x12>\n\x0fregister_player\x12\x11.PlayerIdentifier\x1a\x16.google.protobuf.Empty\"\x00\x12\x42\n\x15submit_paddle_actions\x12\r.PaddleAction\x1a\x16.google.protobuf.Empty\"\x00(\x01\x62\x06proto3')
   ,
   dependencies=[google_dot_protobuf_dot_empty__pb2.DESCRIPTOR,google_dot_protobuf_dot_timestamp__pb2.DESCRIPTOR,])
 
@@ -41,21 +41,21 @@ _PADDLETYPE = _descriptor.EnumDescriptor(
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='RIGHT', index=2, number=1,
+      name='RIGHT', index=2, number=2,
       serialized_options=None,
       type=None),
   ],
   containing_type=None,
-  serialized_options=_b('\020\001'),
+  serialized_options=None,
   serialized_start=378,
-  serialized_end=428,
+  serialized_end=424,
 )
 _sym_db.RegisterEnumDescriptor(_PADDLETYPE)
 
 PaddleType = enum_type_wrapper.EnumTypeWrapper(_PADDLETYPE)
 NOT_SET = 0
 LEFT = 1
-RIGHT = 1
+RIGHT = 2
 
 
 
@@ -211,7 +211,6 @@ PaddleAction = _reflection.GeneratedProtocolMessageType('PaddleAction', (_messag
 _sym_db.RegisterMessage(PaddleAction)
 
 
-_PADDLETYPE._options = None
 
 _GAMEMASTER = _descriptor.ServiceDescriptor(
   name='GameMaster',
@@ -219,8 +218,8 @@ _GAMEMASTER = _descriptor.ServiceDescriptor(
   file=DESCRIPTOR,
   index=0,
   serialized_options=None,
-  serialized_start=431,
-  serialized_end=631,
+  serialized_start=427,
+  serialized_end=627,
   methods=[
   _descriptor.MethodDescriptor(
     name='stream_game_state',
