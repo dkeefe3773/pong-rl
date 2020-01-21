@@ -97,7 +97,7 @@ class DefaultGameCollisionEngine(GameCollisionEngine):
     def update_state(self, actors: List[Actor]):
         # first lets see if there are any potential collisions
         possible_collision_pairs = itertools.combinations(actors, 2)
-        any_possible_collision = any(map(calculate_potential_collision, *possible_collision_pairs))
+        any_possible_collision = any(map(calculate_potential_collision, possible_collision_pairs))
 
         if not any_possible_collision:
             for actor in actors: actor.move_forward()

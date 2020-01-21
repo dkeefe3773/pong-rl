@@ -193,6 +193,18 @@ class GameRendererConfig(Config):
         return FontConfig(font_name, font_size, font_color, font_style_bold, font_style_italic)
 
     @property
+    def fps_font(self) -> FontConfig:
+        """
+        :return:  A FontConfig object for the in-game fps counter
+        """
+        font_name = Config.get_property_string('game_renderer', 'fps_font_name')
+        font_size = Config.get_property_int('game_renderer', 'fps_font_size')
+        font_color = eval(Config.get_property_string('game_renderer', 'fps_font_color'))
+        font_style_bold = Config.get_property_bool('game_renderer', 'fps_font_bold')
+        font_style_italic = Config.get_property_bool('game_renderer', 'fps_font_italic')
+        return FontConfig(font_name, font_size, font_color, font_style_bold, font_style_italic)
+
+    @property
     def color_config(self) -> ColorConfig:
         score_color = eval(Config.get_property_string('game_renderer', 'score_pane_color'))
         meta_color = eval(Config.get_property_string('game_renderer', 'meta_pane_color'))
@@ -206,6 +218,9 @@ class GameRendererConfig(Config):
         return ColorConfig(score_color, meta_color, arena_color, paddle_color, primary_ball_color,
                            grow_paddle_ball_color, shrink_paddle_ball_color, net_color, obstacle_color)
 
+    @property
+    def fps_cap(self) -> int:
+        return Config.get_property_int('game_renderer', 'fps_cap')
 
 game_server_config = GameServerConfig()
 player_config = PlayerConfig()

@@ -1,6 +1,8 @@
 # to get rid of alsa sound errors: see https://raspberrypi.stackexchange.com/questions/83254/pygame-and-alsa-lib-error
 import os
+import sys
 
+from pygame.time import Clock
 from shapely.geometry import Polygon
 
 from gameengine.gameactors import Actor, Paddle, Ball, Net, BallFlavor
@@ -43,7 +45,9 @@ GamePane = namedtuple("GamePane", ['surface', 'pos'])
 # player_id is expected to be PlayerIdentifer object and scorecard a StandardScoreCard
 RegisteredPlayer = namedtuple("RegisteredPlayer", ['player_id', 'scorecard'])
 
-def color_from_ball(actor: Ball) -> Tuple[int,int,int]:
+FPS_CAP = game_render_config.fps_cap
+
+def color_from_ball(actor: Ball) -> Tuple[int, int, int]:
     if actor.flavor is BallFlavor.PRIMARY:
         color = color_config.primary_ball_color
     elif actor.flavor is BallFlavor.GROW_PADDLE:
@@ -55,7 +59,7 @@ def color_from_ball(actor: Ball) -> Tuple[int,int,int]:
     return color
 
 
-def color_from_actor(actor: Actor) -> Tuple[int,int,int]:
+def color_from_actor(actor: Actor) -> Tuple[int, int, int]:
     if isinstance(actor, Paddle):
         color = color_config.paddle_color
     elif isinstance(actor, Ball):
@@ -65,6 +69,7 @@ def color_from_actor(actor: Actor) -> Tuple[int,int,int]:
     else:
         color = color_config.obstacle_color
     return color
+
 
 class CachedScoreFontImages:
     def __init__(self, scorecard: StandardScoreCard):
@@ -84,6 +89,7 @@ class CachedScoreFontImages:
         self.total_points_image: Optional[pygame.Surface] = None
         self.matches_won_image: Optional[pygame.Surface] = None
         self.update(scorecard)
+        self.fps_clock: Optional[Clock] = None
 
     def ordered_images(self) -> List[pygame.Surface]:
         return [self.name_image, self.paddle_stategy_image, self.match_points_image, self.total_points_image,
@@ -160,16 +166,17 @@ class CachedScoreFontImages:
         self.name_image = self.font.render(f"Player Name: {self.player_name}", True, self.fontconfig.color)
 
     def _update_strategy_image(self):
-        self.paddle_stategy_image = self.font.render(f"Paddle Strategy: {self.paddle_strategy_name}", True, self.fontconfig.color)
+        self.paddle_stategy_image = self.font.render(f"Paddle Strategy: {self.paddle_strategy_name}", True,
+                                                     self.fontconfig.color)
 
     def _update_match_points_image(self):
         self.match_points_image = self.font.render(f"Match Points: {self.match_points}", True, self.fontconfig.color)
 
     def _update_total_points_image(self):
-        self.total_points_image = self.font.render(f"Total Points: {self.total_points}", True,  self.fontconfig.color)
+        self.total_points_image = self.font.render(f"Total Points: {self.total_points}", True, self.fontconfig.color)
 
     def _update_matches_won_image(self):
-        self.matches_won_image = self.font.render(f"Match Count: {self.matches_won}", True,  self.fontconfig.color)
+        self.matches_won_image = self.font.render(f"Match Count: {self.matches_won}", True, self.fontconfig.color)
 
 
 class DefaultPongRenderer:
@@ -180,11 +187,7 @@ class DefaultPongRenderer:
         self.scoreboard_font_info = game_render_config.score_board_font
         self.registration_font_info = game_render_config.registration_font
         self.commencement_font_info = game_render_config.commencement_font
-
-        self.scoreboard_font = pygame.font.SysFont(self.scoreboard_font_info.name,
-                                                   self.scoreboard_font_info.size,
-                                                   self.scoreboard_font_info.is_bold,
-                                                   self.scoreboard_font_info.is_italic)
+        self.fps_font_info = game_render_config.fps_font
 
         self.registration_font = pygame.font.SysFont(self.registration_font_info.name,
                                                      self.registration_font_info.size,
@@ -195,6 +198,11 @@ class DefaultPongRenderer:
                                                      self.commencement_font_info.size,
                                                      self.commencement_font_info.is_bold,
                                                      self.commencement_font_info.is_italic)
+
+        self.fps_font = pygame.font.SysFont(self.fps_font_info.name,
+                                            self.fps_font_info.size,
+                                            self.fps_font_info.is_bold,
+                                            self.fps_font_info.is_italic)
 
         # the game canvas from top to bottom comprises three 'panes' stretched fully across canvas width:
         # Scoreboard surface + buffer
@@ -222,6 +230,9 @@ class DefaultPongRenderer:
 
         # specify position for game commencement notification
         self.commencement_pos = (0, self.canvas_height // 2)
+
+        # specify position of fps counter relative to meta surface
+        self.fps_pos = (self.canvas_width - 100, META_DATA_HEIGHT // 2 )
 
         self.game_started: bool = False
         self.registration_closed: bool = False
@@ -255,21 +266,14 @@ class DefaultPongRenderer:
             self.registration_closed = len(self.registered_player_by_paddle_type) == 2
             pygame.display.update()
 
-    def draw_arena(self, screen):
-        pass
-        # black = (0, 0, 0)
-        # white = (255, 255, 255)
-        # screen.fill(black)
-        # pygame.draw.rect(screen, white, ((0, 0), (self.screen_width, self.screen_height)), 20)
-
     def render_commencement(self):
         blit_rectangle = None
         for countdown in reversed(range(4)):
             pygame.time.delay(1000)
             commencement_image = self.commencement_font.render(f"Pong Experience Beginning in ... {countdown}",
-                                                              True, self.commencement_font_info.color)
+                                                               True, self.commencement_font_info.color)
             if blit_rectangle:
-                self.canvas.fill((0,0,0), blit_rectangle)
+                self.canvas.fill((0, 0, 0), blit_rectangle)
             blit_rectangle = self.canvas.blit(commencement_image, self.commencement_pos)
             pygame.display.update()
 
@@ -324,6 +328,9 @@ class DefaultPongRenderer:
         """
         surface = self.metadata_pane.surface
         surface.fill(color_config.meta_color)
+        fps_string = str(int(self.fps_clock.get_fps()))
+        fps_image = self.fps_font.render(f"fps: {fps_string}" , True, self.fps_font_info.color)
+        surface.blit(fps_image, self.fps_pos)
         return [self.canvas.blit(surface, self.metadata_pane.pos)]
 
     def update_arena_pane(self) -> List[pygame.Rect]:
@@ -353,16 +360,19 @@ class DefaultPongRenderer:
             self.game_started = True
 
         self.render_commencement()
+
+        self.fps_clock = pygame.time.Clock()
         pygame.display.update(self.update_panes())
 
+        while True:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
 
-        # fps_clock = pygame.time.Clock()
-        #
-        # while True:
-        #     for event in pygame.event.get():
-        #         if event.type == pygame.QUIT:
-        #             pygame.quit()
-        #             sys.exit()
+            self.game_engine.update_state(self.arena.actors)
+            pygame.display.update(self.update_panes())
+            self.fps_clock.tick(FPS_CAP)
         #
         #     self.draw_arena(screen)
         #
