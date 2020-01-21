@@ -25,6 +25,8 @@ class ColorConfig:
                  arena_color: Tuple[int, int, int] = (255, 255, 255),
                  paddle_color: Tuple[int, int, int] = (0, 0, 0),
                  primary_ball_color: Tuple[int, int, int] = (0, 0, 0),
+                 grow_paddle_ball_color: Tuple[int, int, int] = (0, 0, 0),
+                 shrink_paddle_ball_color: Tuple[int, int, int] = (0, 0, 0),
                  net_color: Tuple[int, int, int] = (0, 0, 0),
                  obstacle_color: Tuple[int, int, int] = (0, 0, 0)):
         self.score_color = score_color
@@ -32,5 +34,7 @@ class ColorConfig:
         self.arena_color = arena_color
         self.paddle_color = paddle_color
         self.primary_ball_color = primary_ball_color
+        self.grow_paddle_ball_color = grow_paddle_ball_color
+        self.shrink_paddle_ball_color = shrink_paddle_ball_color
         self.net_color = net_color
         self.obstacle_color = obstacle_color

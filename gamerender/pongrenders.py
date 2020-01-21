@@ -1,11 +1,15 @@
 # to get rid of alsa sound errors: see https://raspberrypi.stackexchange.com/questions/83254/pygame-and-alsa-lib-error
 import os
 
+from shapely.geometry import Polygon
+
+from gameengine.gameactors import Actor, Paddle, Ball, Net, BallFlavor
+
 os.environ['SDL_AUDIODRIVER'] = 'dsp'
 
 from collections import namedtuple
 from threading import RLock
-from typing import Dict, Optional, List
+from typing import Dict, Optional, List, Tuple
 
 import pygame
 from pygame import font
@@ -18,6 +22,7 @@ from gamerender.scorecards import StandardScoreCard
 from proto_gen.gamemaster_pb2 import PlayerIdentifier, PaddleType
 
 logger = logging_configurator.get_logger(__name__)
+color_config = game_render_config.color_config
 
 # a puzzling requirement for 'initializing' all the pygame modules.
 # apparently, if performance is an issue, you just initialize the modules you need, but not a problem right now
@@ -38,6 +43,28 @@ GamePane = namedtuple("GamePane", ['surface', 'pos'])
 # player_id is expected to be PlayerIdentifer object and scorecard a StandardScoreCard
 RegisteredPlayer = namedtuple("RegisteredPlayer", ['player_id', 'scorecard'])
 
+def color_from_ball(actor: Ball) -> Tuple[int,int,int]:
+    if actor.flavor is BallFlavor.PRIMARY:
+        color = color_config.primary_ball_color
+    elif actor.flavor is BallFlavor.GROW_PADDLE:
+        color = color_config.grow_paddle_ball_color
+    elif actor.flavor is BallFlavor.SHRINK_PADDLE:
+        color = color_config.shrink_paddle_ball_color
+    else:
+        color = (0, 0, 0)
+    return color
+
+
+def color_from_actor(actor: Actor) -> Tuple[int,int,int]:
+    if isinstance(actor, Paddle):
+        color = color_config.paddle_color
+    elif isinstance(actor, Ball):
+        color = color_from_ball(actor)
+    elif isinstance(actor, Net):
+        color = color_config.net_color
+    else:
+        color = color_config.obstacle_color
+    return color
 
 class CachedScoreFontImages:
     def __init__(self, scorecard: StandardScoreCard):
@@ -246,20 +273,32 @@ class DefaultPongRenderer:
             blit_rectangle = self.canvas.blit(commencement_image, self.commencement_pos)
             pygame.display.update()
 
-    def update_panes(self):
-        self.update_score_pane()
-        self.update_meta_pane()
-        self.update_arena_pane()
+    def update_panes(self) -> List[pygame.Rect]:
+        """
+        This wil blit score changes to the working canvas.
+        :return: A list of rectangles that can be used for pygame.display.update that represent
+        canvas areas that were updated
+        """
+        blitted_rectangles = []
+        blitted_rectangles.extend(self.update_score_pane())
+        blitted_rectangles.extend(self.update_meta_pane())
+        blitted_rectangles.extend(self.update_arena_pane())
+        return blitted_rectangles
 
-    def update_score_pane(self):
+    def update_score_pane(self) -> List[pygame.Rect]:
+        """
+        This wil blit score changes to the working canvas.
+        :return: A list of rectangles that can be used for pygame.display.update that represent
+        canvas areas that were updated
+        """
         surface = self.scoreboard_pane.surface
         left_score_fonts = self.cached_score_fonts_by_paddle_type[PaddleType.LEFT]
         right_score_fonts = self.cached_score_fonts_by_paddle_type[PaddleType.RIGHT]
         if not left_score_fonts.is_updated or not right_score_fonts.is_updated:
-            return
+            return []
 
         # wipe out what was there before
-        surface.fill(game_render_config.color_config.score_color)
+        surface.fill(color_config.score_color)
         spacer = self.scoreboard_font_info.size + SEPARATOR
 
         # populate left hand side
@@ -275,17 +314,32 @@ class DefaultPongRenderer:
         for font_image in right_score_fonts.ordered_images():
             surface.blit(font_image, (x_start, y_start))
             y_start += spacer
-        self.canvas.blit(surface, self.scoreboard_pane.pos)
+        return [self.canvas.blit(surface, self.scoreboard_pane.pos)]
 
-    def update_meta_pane(self):
+    def update_meta_pane(self) -> List[pygame.Rect]:
+        """
+        This wil blit score changes to the working canvas.
+        :return: A list of rectangles that can be used for pygame.display.update that represent
+        canvas areas that were updated
+        """
         surface = self.metadata_pane.surface
-        surface.fill(game_render_config.color_config.meta_color)
-        self.canvas.blit(surface, self.metadata_pane.pos)
+        surface.fill(color_config.meta_color)
+        return [self.canvas.blit(surface, self.metadata_pane.pos)]
 
-    def update_arena_pane(self):
+    def update_arena_pane(self) -> List[pygame.Rect]:
+        """
+        This wil blit score changes to the working canvas.
+        :return: A list of rectangles that can be used for pygame.display.update that represent
+        canvas areas that were updated
+        """
         surface = self.arena_pane.surface
-        surface.fill(game_render_config.color_config.arena_color)
-        self.canvas.blit(surface, self.arena_pane.pos)
+        surface.fill(color_config.arena_color)
+        for actor in self.arena.actors:
+            color = color_from_actor(actor)
+            shape: Polygon = actor.shape
+            coords = list(shape.exterior.coords)
+            pygame.draw.polygon(surface, color, coords)
+        return [self.canvas.blit(surface, self.arena_pane.pos)]
 
     def start_game(self):
         with game_lock:
@@ -299,8 +353,9 @@ class DefaultPongRenderer:
             self.game_started = True
 
         self.render_commencement()
-        self.update_panes()
-        pygame.display.update()
+        pygame.display.update(self.update_panes())
+
+
         # fps_clock = pygame.time.Clock()
         #
         # while True:

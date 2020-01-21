@@ -9,7 +9,7 @@ from shapely.geometry import Polygon
 
 from config import property_configurator
 from config.property_configurator import game_arena_config
-from gameengine.gameactors import Actor, Wall, Net, Paddle, Velocity, Ball, BallColor
+from gameengine.gameactors import Actor, Wall, Net, Paddle, Velocity, Ball, BallFlavor
 from utils.measures import ureg
 
 PADDLE_OFFSET = property_configurator.game_arena_config.paddle_offset
@@ -74,7 +74,7 @@ class Arena:
 
     def make_primary_ball(self):
         ball_shape = shapely.geometry.Point(self.arena_width / 2, self.arena_height / 2).buffer(WHITE_BALL_RADIUS)
-        self.primary_ball = Ball('primary_ball', ball_shape, Velocity(0, 0), BallColor.WHITE)
+        self.primary_ball = Ball('primary_ball', ball_shape, Velocity(0, 0), BallFlavor.PRIMARY)
 
     def make_paddles(self):
         left_paddle_poly = shapely.geometry.box(PADDLE_OFFSET,

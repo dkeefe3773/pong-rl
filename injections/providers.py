@@ -5,7 +5,7 @@ from config import property_configurator
 from gameengine.arena import Arena
 from gameengine.ball_to_ball_collision import BilliardBallCollider
 from gameengine.ball_to_barrier_collision import IncidentAngleRebounder
-from gameengine.ball_to_paddle_collision import update_white_ball, CollisionStrategyByColor, BallPaddleCollider
+from gameengine.ball_to_paddle_collision import BallPaddleCollider, CollisionStrategyByFlavor, update_primary_ball
 from gameengine.collision_engine import CollisionPairHandlerFactory, DefaultGameCollisionEngine
 from gamerender.pongrenders import DefaultPongRenderer
 from gameserver.pong_server import PongServer
@@ -57,11 +57,11 @@ class GameEngineProviders(containers.DeclarativeContainer):
     ball_barrier_collision = providers.Singleton(IncidentAngleRebounder)
 
     # ball to paddle collisions
-    white_ball_paddle_collision = providers.Callable(update_white_ball)
-    collision_strategy_by_color = providers.Singleton(CollisionStrategyByColor,
-                                                      white_ball_callable_provider=white_ball_paddle_collision.delegate())
+    primary_ball_paddle_collision = providers.Callable(update_primary_ball)
+    collision_strategy_by_flavor = providers.Singleton(CollisionStrategyByFlavor,
+                                                       primary_ball_callable_provider=primary_ball_paddle_collision.delegate())
     ball_paddle_collision = providers.Singleton(BallPaddleCollider,
-                                                classic_paddle_collision_factory=collision_strategy_by_color)
+                                                classic_paddle_collision_factory=collision_strategy_by_flavor)
 
     collision_pair_handler_factory = providers.Singleton(CollisionPairHandlerFactory,
                                                          ball_to_ball_handler=ball_ball_collision,
@@ -78,7 +78,8 @@ class GameRendererProviders(containers.DeclarativeContainer):
     """
     pong_renderer = providers.Factory(DefaultPongRenderer,
                                       arena=GameArenaProvider.default_arena,
-                                      game_engine = GameEngineProviders.game_engine)
+                                      game_engine=GameEngineProviders.game_engine)
+
 
 class ServicerProviders(containers.DeclarativeContainer):
     """

@@ -12,7 +12,6 @@ from config.property_configurator import game_engine_config
 
 Velocity = namedtuple('Velocity', ['vel_x', 'vel_y'])
 
-
 class Actor(ABC):
     def __init__(self, name: str, shape: BaseGeometry, velocity: Velocity, collision_enabled: bool,
                  rebound_enabled: bool):
@@ -178,24 +177,25 @@ class Paddle(Actor):
     def speed_bound(self) -> Tuple[int, int]:
         return (self._min_paddle_speed, self._max_paddle_speed)
 
-class BallColor(Enum):
-    WHITE = 1
-    RED = 2
-    GREEN = 3
+class BallFlavor(Enum):
+    PRIMARY = 1
+    GROW_PADDLE = 2
+    SHRINK_PADDLE = 3
 
 
 class Ball(Actor):
-    def __init__(self, name: str, polygon: Polygon, velocity: Velocity, color: BallColor):
+    def __init__(self, name: str, polygon: Polygon, velocity: Velocity, flavor: BallFlavor):
         """
         :param name:      an identifier for the ball
         :param polygon:   shape of the ball
         :param velocity:  initial speed of the ball
-        :param color:     the ball color.  Different color balls will have different collision models
+        :param flavor:    the ball flavor.  Different flavored balls might have different collision models and effects
+        on other actors
         """
         super().__init__(name, polygon, velocity, collision_enabled=True, rebound_enabled=True)
         self._max_ball_speed = game_engine_config.max_ball_speed
         self._min_ball_speed = game_engine_config.min_ball_speed
-        self.color = color
+        self.flavor = flavor
         if numpy.linalg.norm(self.velocity) > 0:
             self.throttle_velocity()
 

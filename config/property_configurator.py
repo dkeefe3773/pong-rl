@@ -201,8 +201,10 @@ class GameRendererConfig(Config):
         obstacle_color = eval(Config.get_property_string('game_renderer', 'obstacle_color'))
         net_color = eval(Config.get_property_string('game_renderer', 'net_color'))
         primary_ball_color = eval(Config.get_property_string('game_renderer', 'primary_ball_color'))
-        return ColorConfig(score_color, meta_color, arena_color, paddle_color, primary_ball_color, net_color,
-                           obstacle_color)
+        grow_paddle_ball_color = eval(Config.get_property_string('game_renderer', 'grow_paddle_ball_color'))
+        shrink_paddle_ball_color = eval(Config.get_property_string('game_renderer', 'shrink_paddle_ball_color'))
+        return ColorConfig(score_color, meta_color, arena_color, paddle_color, primary_ball_color,
+                           grow_paddle_ball_color, shrink_paddle_ball_color, net_color, obstacle_color)
 
 
 game_server_config = GameServerConfig()

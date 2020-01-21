@@ -8,18 +8,18 @@ from shapely import ops
 
 from config import logging_configurator, property_configurator
 from gameengine.collision_engine import ActorPairCollidor
-from gameengine.gameactors import Ball, Paddle, BallColor
+from gameengine.gameactors import Ball, Paddle, BallFlavor
 
 logger = logging_configurator.get_logger(__name__)
 MAX_ANGLE = property_configurator.ball_paddle_collision_config.max_angle_quantity
 
 
-def update_white_ball(ball: Ball, paddle: Paddle):
+def update_primary_ball(ball: Ball, paddle: Paddle):
     actors_intersect = ball.shape.intersects(paddle.shape)
     if not actors_intersect:
         return
 
-    logger.info(f"Begin classic pong paddle ball collision modeling for {ball.color} and {paddle.name}")
+    logger.info(f"Begin classic pong paddle ball collision modeling for {ball.flavor} and {paddle.name}")
     # lets make ball back up so it is not intersecting anymore.  We will try to back up one pixel at a time
     ball_backup_distance = 1. / numpy.linalg.norm(ball.velocity)
     while actors_intersect:
@@ -47,13 +47,13 @@ def update_white_ball(ball: Ball, paddle: Paddle):
     ball.velocity = numpy.array([rebound_vel_x, rebound_vel_y])
 
 
-class CollisionStrategyByColor:
-    def __init__(self, white_ball_callable_provider: DelegatedCallable):
-        self.white_ball_callable_provider = white_ball_callable_provider
+class CollisionStrategyByFlavor:
+    def __init__(self, primary_ball_callable_provider: DelegatedCallable):
+        self.primary_ball_callable_provider = primary_ball_callable_provider
 
-    def provide_callable(self, ball_color: BallColor) -> Callable:
-        if ball_color is BallColor.WHITE:
-            return self.white_ball_callable_provider
+    def provide_callable(self, ball_flavor: BallFlavor) -> Callable:
+        if ball_flavor is BallFlavor.PRIMARY:
+            return self.primary_ball_callable_provider
         else:
             return lambda *args: None
 
@@ -64,11 +64,11 @@ class BallPaddleCollider(ActorPairCollidor):
     if it hits the bottom part of the paddle it will rebound downward
     """
 
-    def __init__(self, classic_paddle_collision_factory: CollisionStrategyByColor):
+    def __init__(self, classic_paddle_collision_factory: CollisionStrategyByFlavor):
         self.classic_paddle_collision_factory = classic_paddle_collision_factory
 
     def update_pair_state(self, ball: Ball, paddle: Paddle):
         if not isinstance(ball, Ball) or not isinstance(paddle, Paddle):
             return
-        collision_strategy_callable = self.classic_paddle_collision_factory.provide_callable(ball.color)
+        collision_strategy_callable = self.classic_paddle_collision_factory.provide_callable(ball.flavor)
         collision_strategy_callable()
