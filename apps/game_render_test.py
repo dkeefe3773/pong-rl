@@ -18,16 +18,13 @@ def test_game_render():
 
     pong_renderer.register_player(player_left_identifier)
 
-    time.sleep(5)
+    time.sleep(1)
 
     pong_renderer.register_player(player_right_identifier)
 
-    time.sleep(5)
+    time.sleep(1)
 
     pong_renderer.start_game()
-
-    time.sleep(50)
-
 
 if __name__ == "__main__":
     test_game_render()

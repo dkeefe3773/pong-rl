@@ -2,6 +2,7 @@ import itertools
 from abc import ABC, abstractmethod
 from typing import List
 
+import numpy
 from shapely import affinity
 from shapely.geometry import LineString
 from shapely.geometry.base import BaseGeometry
@@ -19,6 +20,7 @@ from gameengine.gameactors import Actor, Ball, Paddle
 # this is the maximum number of pixels any game object can move between consecutive frames
 PHYSICS_FRAME_RATE = property_configurator.game_engine_config.max_speed
 
+
 def calculate_potential_collision(actor1: Actor, actor2: Actor) -> int:
     """
     Two actors may collide if their projected paths cross
@@ -26,16 +28,21 @@ def calculate_potential_collision(actor1: Actor, actor2: Actor) -> int:
     :param actor2:
     :return: if no collision possible: 0, otherwise 1
     """
-    if not (actor1.is_collision_enabled() and actor2.is_collision_enabled()) or actor1 is actor2:
-        # can't collide unless both have collision enabled, can't collide with self
+    if not (actor1.is_collision_enabled() and actor2.is_collision_enabled()
+        or (actor1 is actor2)
+        or (numpy.linalg.norm(actor1.velocity) == 0 and numpy.linalg.norm(actor2.velocity) == 0)):
+    # can't collide unless both have collision enabled, can't collide with self
         return 0
 
-    actor1_line_string = LineString([actor1.shape.centroid, (actor1.velocity.vel_x, actor1.velocity.vel_y)])
-    actor2_line_string = LineString([actor2.shape.centroid, (actor2.velocity.vel_x, actor2.velocity.vel_y)])
+    actor1_line_string = LineString(
+        [actor1.shape.centroid, (actor1.centroid[0] + actor1.velocity[0], actor1.centroid[1] + actor1.velocity[1])])
+
+    actor2_line_string = LineString(
+        [actor2.shape.centroid, (actor2.centroid[0] + actor2.velocity[0], actor2.centroid[1] + actor2.velocity[1])])
 
     for frame_index in range(PHYSICS_FRAME_RATE):
-        actor_1_x, actor_1_y = actor1_line_string.interpolate(frame_index, normalized=True)
-        actor_2_x, actor_2_y = actor2_line_string.interpolate(frame_index, normalized=True)
+        actor_1_x, actor_1_y = actor1_line_string.interpolate(frame_index, normalized=True).coords[0]
+        actor_2_x, actor_2_y = actor2_line_string.interpolate(frame_index, normalized=True).coords[0]
 
         actor_1_delta_x = actor_1_x - actor1.shape.centroid.x
         actor_1_delta_y = actor_1_y - actor1.shape.centroid.y
@@ -49,14 +56,17 @@ def calculate_potential_collision(actor1: Actor, actor2: Actor) -> int:
             return 1
     return 0
 
+
 class ActorPairCollidor(ABC):
     @abstractmethod
     def update_pair_state(self, actor1: Actor, actor2: Actor):
         pass
 
+
 class NoOpPairCollision(ActorPairCollidor):
     def update_pair_state(self, actor1: Actor, actor2: Actor):
         pass
+
 
 class CollisionPairHandlerFactory:
     def __init__(self, ball_to_ball_handler: ActorPairCollidor,
@@ -71,12 +81,13 @@ class CollisionPairHandlerFactory:
             return NoOpPairCollision()
 
         if isinstance(actor2, Ball):
-            handler =  self.ball_to_ball_handler
+            handler = self.ball_to_ball_handler
         elif isinstance(actor2, Paddle):
             handler = self.ball_to_paddle_handler
         else:
             handler = self.ball_to_barrier_handler
         return handler
+
 
 class GameCollisionEngine(ABC):
     @abstractmethod
@@ -90,6 +101,7 @@ class GameCollisionEngine(ABC):
         """
         pass
 
+
 class DefaultGameCollisionEngine(GameCollisionEngine):
     def __init__(self, collision_pair_handler_factory: CollisionPairHandlerFactory):
         self.collision_pair_handler_factory = collision_pair_handler_factory
@@ -97,7 +109,8 @@ class DefaultGameCollisionEngine(GameCollisionEngine):
     def update_state(self, actors: List[Actor]):
         # first lets see if there are any potential collisions
         possible_collision_pairs = itertools.combinations(actors, 2)
-        any_possible_collision = any(map(calculate_potential_collision, possible_collision_pairs))
+        any_possible_collision = any(
+            map(lambda pair: calculate_potential_collision(pair[0], pair[1]), possible_collision_pairs))
 
         if not any_possible_collision:
             for actor in actors: actor.move_forward()
@@ -113,6 +126,3 @@ class DefaultGameCollisionEngine(GameCollisionEngine):
                     collision_handler = self.collision_pair_handler_factory.get_collision_handler(*collision_pair)
                     collision_handler.update_pair_state(*collision_pair)
                 for actor in actors: actor.move_forward(1.0 / PHYSICS_FRAME_RATE)
-
-
-
