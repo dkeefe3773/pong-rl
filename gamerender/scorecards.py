@@ -73,10 +73,9 @@ class ScoreKeeper:
         :param losing_player:    the losing player
         :return: None
         """
-        winning_player_hashable_id = ":"
-        winning_scorecard = self.player_to_scorecard[winning_player]
+        winning_scorecard = self.player_to_scorecard[hashable_id(winning_player)]
         if winning_scorecard.add_match_point():
-            losing_scorecard = self.player_to_scorecard[losing_player]
+            losing_scorecard = self.player_to_scorecard[hashable_id(losing_player)]
             losing_scorecard.match_over()
 
     def get_scorecard(self, player: PlayerIdentifier) -> StandardScoreCard:

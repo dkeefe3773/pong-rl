@@ -260,15 +260,26 @@ class DefaultPongRenderer:
 
     def update_score(self):
         primary_ball_centroid = self.arena.primary_ball.centroid
-        left_paddle_centroid = self.arena.paddles[0].centroid
-        right_paddle_centroid = self.arena.paddles[1].centroid
+        left_back_line_centroid = self.arena.left_back_line.centroid
+        right_back_line_centroid = self.arena.right_back_line.centroid
+        winner_discovered = False
+        if primary_ball_centroid[0] < left_back_line_centroid[0]:
+            winning_player = self.registered_player_by_paddle_type[PaddleType.RIGHT].player_id
+            losing_player = self.registered_player_by_paddle_type[PaddleType.LEFT].player_id
+            self.scorekeeper.tally_point(winning_player, losing_player)
+            self.cached_score_fonts_by_paddle_type[PaddleType.RIGHT].update(self.scorekeeper.get_scorecard(winning_player))
+            self.cached_score_fonts_by_paddle_type[PaddleType.LEFT].update(self.scorekeeper.get_scorecard(losing_player))
+            winner_discovered = True
+        elif primary_ball_centroid[0] > right_back_line_centroid[0]:
+            winning_player = self.registered_player_by_paddle_type[PaddleType.LEFT].player_id
+            losing_player = self.registered_player_by_paddle_type[PaddleType.RIGHT].player_id
+            self.scorekeeper.tally_point(winning_player, losing_player)
+            self.cached_score_fonts_by_paddle_type[PaddleType.LEFT].update(self.scorekeeper.get_scorecard(winning_player))
+            self.cached_score_fonts_by_paddle_type[PaddleType.RIGHT].update(self.scorekeeper.get_scorecard(losing_player))
+            winner_discovered = True
 
-        if primary_ball_centroid[0] < left_paddle_centroid[0]:
-            pass
-        elif primary_ball_centroid[0] > right_paddle_centroid[0]:
-            pass
-
-
+        if winner_discovered:
+            self.arena.reset_starting_positions()
 
     def start_game(self):
         with game_lock:
@@ -293,6 +304,6 @@ class DefaultPongRenderer:
                     sys.exit()
 
             self.game_engine.update_state(self.arena.actors)
-            self.update_score()
             pygame.display.update(self.update_panes())
+            self.update_score()
             self.fps_clock.tick(FPS_CAP)

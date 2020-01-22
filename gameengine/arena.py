@@ -71,12 +71,12 @@ class Arena:
         """
         for paddle in filter(lambda actor: isinstance(actor, Paddle), self.actors):
             offset_to_center = paddle.centroid - self.arena_center
-            paddle.translate(0, offset_to_center[1])
-            paddle.velocity = numpy.array([0, 0])
+            paddle.translate(0, -offset_to_center[1])
+            paddle.velocity = (0,0)
 
         for ball in filter(lambda actor: isinstance(actor, Ball), self.actors):
             offset_to_center = ball.centroid - self.arena_center
-            ball.translate(offset_to_center[0], offset_to_center[1])
+            ball.translate(-offset_to_center[0], -offset_to_center[1])
             max_angle_degrees = MAX_BALL_START_ANGLE.to(ureg.angular_degrees).magnitude
             random_angle = random.randint(0, math.fabs(max_angle_degrees)) * ureg.angular_degree
             vel_x = STARTING_BALL_SPEED * math.cos(random_angle.to_base_units()) * random.choice([-1, 1])
