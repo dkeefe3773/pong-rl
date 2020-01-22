@@ -21,7 +21,7 @@ def update_primary_ball(ball: Ball, paddle: Paddle):
 
     logger.info(f"Begin classic pong paddle ball collision modeling for {ball.flavor} and {paddle.name}")
     # lets make ball back up so it is not intersecting anymore.  We will try to back up one pixel at a time
-    ball_backup_distance = 1. / numpy.linalg.norm(ball.velocity)
+    ball_backup_distance = 1. / ball.vnorm
     while actors_intersect:
         logger.info("Moving ball backwards one pixel at a time")
         ball.move_backward(ball_backup_distance)
@@ -29,22 +29,21 @@ def update_primary_ball(ball: Ball, paddle: Paddle):
     logger.info("Ball no longer intsersects paddle")
 
     nearest_ball_point, nearest_poly_point = shapely.ops.nearest_points(ball.shape, paddle.shape)
-    paddle_hit_x, paddle_hit_y = nearest_poly_point
+    paddle_hit_x, paddle_hit_y = list(nearest_poly_point.coords)[0]
 
     paddle_min_x, paddle_min_y, paddle_max_x, paddle_max_y = paddle.shape.bounds
     paddle_half_lenth = (paddle_max_y - paddle_min_y) / 2.0
-    _, paddle_mid_y = paddle.shape.centroid
+    _, paddle_mid_y = list(paddle.shape.centroid.coords)[0]
     hit_distance_from_center = math.fabs(paddle_hit_y - paddle_mid_y)
     normalized_hit_distance_from_center = sorted([0, hit_distance_from_center / paddle_half_lenth, 1])[1]
     rebound_angle = MAX_ANGLE * normalized_hit_distance_from_center
 
-    ball_vel_mag = numpy.linalg.norm(ball.velocity)
-    rebound_vel_x = ball_vel_mag * math.cos(rebound_angle.to_base_units().magnitude)
+    rebound_vel_x = ball.vnorm * math.cos(rebound_angle.to_base_units().magnitude)
     rebound_vel_x = rebound_vel_x if ball.velocity[0] < 0 else -rebound_vel_x
 
-    rebound_vel_y = ball_vel_mag * math.sin(rebound_angle.to_base_units().magnitude)
+    rebound_vel_y = ball.vnorm * math.sin(rebound_angle.to_base_units().magnitude)
     rebound_vel_y = -rebound_vel_y if paddle_hit_y < paddle_mid_y else rebound_vel_y
-    ball.velocity = numpy.array([rebound_vel_x, rebound_vel_y])
+    ball.velocity = (rebound_vel_x, rebound_vel_y)
 
 
 class CollisionStrategyByFlavor:

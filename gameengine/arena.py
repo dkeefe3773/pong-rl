@@ -7,7 +7,7 @@ import shapely
 from shapely import affinity
 from shapely.geometry import Polygon
 
-from config import property_configurator
+from config import property_configurator, logging_configurator
 from config.property_configurator import game_arena_config
 from gameengine.gameactors import Actor, Wall, Net, Paddle, Velocity, Ball, BallFlavor
 from utils.measures import ureg
@@ -20,6 +20,7 @@ WHITE_BALL_RADIUS = property_configurator.game_arena_config.white_ball_radius
 MAX_BALL_START_ANGLE = property_configurator.game_arena_config.max_ball_starting_angle
 STARTING_BALL_SPEED = property_configurator.game_arena_config.starting_ball_speed
 
+logger = logging_configurator.get_logger(__name__)
 
 class Arena:
     def __init__(self, other_actors: List[Actor] = None):

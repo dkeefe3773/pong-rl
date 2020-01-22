@@ -6,6 +6,7 @@ import numpy
 from shapely import affinity
 from shapely.geometry import LineString
 from shapely.geometry.base import BaseGeometry
+from shapely.geometry import box
 
 from config import property_configurator
 from gameengine.gameactors import Actor, Ball, Paddle
@@ -34,27 +35,9 @@ def calculate_potential_collision(actor1: Actor, actor2: Actor) -> int:
             (actor1.vnorm == 0 and actor2.vnorm == 0):
         return False
 
-    actor1_line_string = LineString(
-        [actor1.shape.centroid, (actor1.centroid[0] + actor1.velocity[0], actor1.centroid[1] + actor1.velocity[1])])
-
-    actor2_line_string = LineString(
-        [actor2.shape.centroid, (actor2.centroid[0] + actor2.velocity[0], actor2.centroid[1] + actor2.velocity[1])])
-
-    for frame_index in range(PHYSICS_FRAME_RATE):
-        actor_1_x, actor_1_y = actor1_line_string.interpolate(frame_index, normalized=True).coords[0]
-        actor_2_x, actor_2_y = actor2_line_string.interpolate(frame_index, normalized=True).coords[0]
-
-        actor_1_delta_x = actor_1_x - actor1.shape.centroid.x
-        actor_1_delta_y = actor_1_y - actor1.shape.centroid.y
-        actor_1_teleported_shape: BaseGeometry = affinity.translate(actor1.shape, actor_1_delta_x, actor_1_delta_y)
-
-        actor_2_delta_x = actor_2_x - actor2.shape.centroid.x
-        actor_2_delta_y = actor_2_y - actor2.shape.centroid.y
-        actor_2_teleported_shape: BaseGeometry = affinity.translate(actor2.shape, actor_2_delta_x, actor_2_delta_y)
-
-        if actor_1_teleported_shape.intersects(actor_2_teleported_shape):
-            return True
-    return False
+    actor1_box = box(*actor1.shape.bounds).buffer(max(1, actor1.vnorm))
+    actor2_box = box(*actor2.shape.bounds).buffer(max(1, actor2.vnorm))
+    return actor1_box.intersects(actor2_box)
 
 
 class ActorPairCollidor(ABC):
@@ -121,6 +104,7 @@ class DefaultGameCollisionEngine(GameCollisionEngine):
 
             ball_to_other_pairs = itertools.product(balls, non_balls)
             ball_to_ball_pairs = itertools.combinations(balls, 2)
+
             for frame_index in range(PHYSICS_FRAME_RATE):
                 for collision_pair in itertools.chain(ball_to_other_pairs, ball_to_ball_pairs):
                     collision_handler = self.collision_pair_handler_factory.get_collision_handler(*collision_pair)

@@ -8,7 +8,9 @@ from shapely import affinity
 from shapely.geometry import Polygon, LineString
 from shapely.geometry.base import BaseGeometry
 
+from config import logging_configurator
 from config.property_configurator import game_engine_config
+logger = logging_configurator.get_logger(__name__)
 
 Velocity = namedtuple('Velocity', ['vel_x', 'vel_y'])
 
@@ -17,7 +19,7 @@ class Actor(ABC):
                  rebound_enabled: bool):
         self.name = name
         self._shape = shape
-        self._velocity = numpy.array([velocity.vel_x, velocity.vel_y])
+        self._velocity = numpy.array([velocity.vel_x, velocity.vel_y], dtype=float)
         self._vnorm = numpy.linalg.norm(self._velocity)
         self._collision_enabled = collision_enabled
         self._rebound_enabled = rebound_enabled
@@ -41,12 +43,11 @@ class Actor(ABC):
 
             min_vel, max_vel = self.speed_bound
             if self._vnorm > max_vel:
-                self.velocity = (max_vel / self._vnorm) * self.velocity
+                self._velocity = (max_vel / self._vnorm) * self.velocity
                 self._vnorm = max_vel
             elif self._vnorm < min_vel:
-                self.velocity = (min_vel / self._vnorm) * self.velocity
+                self._velocity = (min_vel / self._vnorm) * self.velocity
                 self._vnorm = min_vel
-
 
     @property
     def shape(self) -> BaseGeometry:
