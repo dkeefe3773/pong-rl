@@ -212,15 +212,21 @@ class GameRendererConfig(Config):
         paddle_color = eval(Config.get_property_string('game_renderer', 'paddle_color'))
         obstacle_color = eval(Config.get_property_string('game_renderer', 'obstacle_color'))
         net_color = eval(Config.get_property_string('game_renderer', 'net_color'))
+        backline_color = eval(Config.get_property_string('game_renderer', 'backline_color'))
         primary_ball_color = eval(Config.get_property_string('game_renderer', 'primary_ball_color'))
         grow_paddle_ball_color = eval(Config.get_property_string('game_renderer', 'grow_paddle_ball_color'))
         shrink_paddle_ball_color = eval(Config.get_property_string('game_renderer', 'shrink_paddle_ball_color'))
         return ColorConfig(score_color, meta_color, arena_color, paddle_color, primary_ball_color,
-                           grow_paddle_ball_color, shrink_paddle_ball_color, net_color, obstacle_color)
+                           grow_paddle_ball_color, shrink_paddle_ball_color, net_color, backline_color, obstacle_color)
 
     @property
     def fps_cap(self) -> int:
         return Config.get_property_int('game_renderer', 'fps_cap')
+
+class MatchPlayConfig(Config):
+    @property
+    def points_per_match(self) -> int:
+        return Config.get_property_int('match_play', 'points_in_match')
 
 game_server_config = GameServerConfig()
 player_config = PlayerConfig()
@@ -228,3 +234,4 @@ game_engine_config = GameEngineConfig()
 ball_paddle_collision_config = ClassicPongCollisionConfig()
 game_arena_config = GameArenaConfig()
 game_render_config = GameRendererConfig()
+match_play_config = MatchPlayConfig()

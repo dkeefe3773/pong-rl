@@ -173,6 +173,9 @@ class Net(StationaryActor):
     def __init__(self, name: str, polygon: Polygon):
         super().__init__(name, polygon, collision_enabled=False, rebound_enabled=False)
 
+class BackLine(StationaryActor):
+    def __init__(self, name: str, polygon: Polygon):
+        super().__init__(name, polygon, collision_enabled=False, rebound_enabled=False)
 
 class Paddle(Actor):
     def __init__(self, name: str, polygon: Polygon, velocity: Velocity):

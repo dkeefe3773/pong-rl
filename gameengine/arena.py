@@ -9,7 +9,7 @@ from shapely.geometry import Polygon
 
 from config import property_configurator, logging_configurator
 from config.property_configurator import game_arena_config
-from gameengine.gameactors import Actor, Wall, Net, Paddle, Velocity, Ball, BallFlavor
+from gameengine.gameactors import Actor, Wall, Net, Paddle, Velocity, Ball, BallFlavor, BackLine
 from utils.measures import ureg
 
 PADDLE_OFFSET = property_configurator.game_arena_config.paddle_offset
@@ -21,6 +21,7 @@ MAX_BALL_START_ANGLE = property_configurator.game_arena_config.max_ball_starting
 STARTING_BALL_SPEED = property_configurator.game_arena_config.starting_ball_speed
 
 logger = logging_configurator.get_logger(__name__)
+
 
 class Arena:
     def __init__(self, other_actors: List[Actor] = None):
@@ -44,11 +45,20 @@ class Arena:
                               polygon=affinity.translate(shapely.geometry.box(0, 0, 1, self.arena_height),
                                                          xoff=self.arena_width // 2))
 
+        self.left_back_line = BackLine(name="left back line",
+                                       polygon=affinity.translate(shapely.geometry.box(0, 0, 1, self.arena_height),
+                                                                  xoff=PADDLE_OFFSET + PADDLE_WIDTH // 2))
+
+        self.right_back_line = BackLine(name="right back line",
+                                        polygon=affinity.translate(shapely.geometry.box(0, 0, 1, self.arena_height),
+                                                                   xoff=self.arena_width - PADDLE_OFFSET - PADDLE_WIDTH // 2))
+
         self.make_primary_ball()
         self.make_paddles()
 
-        self.actors = [self.top_wall, self.bottom_wall, self.center_net, self.paddles[0], self.paddles[1],
-                       self.primary_ball]
+        # the specified order will also be the rendering order.  Later actors will overlay on top of earlier actors
+        self.actors = [self.center_net, self.left_back_line, self.right_back_line,
+                       self.primary_ball, self.paddles[0], self.paddles[1], self.top_wall, self.bottom_wall]
         if other_actors:
             self.actors.extend(other_actors)
         self.reset_starting_positions()
