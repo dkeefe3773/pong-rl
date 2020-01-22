@@ -71,4 +71,4 @@ class BallPaddleCollider(ActorPairCollidor):
         if not isinstance(ball, Ball) or not isinstance(paddle, Paddle):
             return
         collision_strategy_callable = self.classic_paddle_collision_factory.provide_callable(ball.flavor)
-        collision_strategy_callable()
+        collision_strategy_callable(ball, paddle)

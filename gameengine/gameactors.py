@@ -17,7 +17,8 @@ class Actor(ABC):
                  rebound_enabled: bool):
         self.name = name
         self._shape = shape
-        self._velocity = velocity
+        self._velocity = numpy.array([velocity.vel_x, velocity.vel_y])
+        self._vnorm = numpy.linalg.norm(self._velocity)
         self._collision_enabled = collision_enabled
         self._rebound_enabled = rebound_enabled
 
@@ -35,15 +36,16 @@ class Actor(ABC):
         :return:  None
         """
         if not isinstance(self, StationaryActor):
-            v_norm = numpy.linalg.norm(self.velocity)
-            if v_norm == 0:
+            if self._vnorm == 0:
                 return
 
             min_vel, max_vel = self.speed_bound
-            if v_norm > max_vel:
-                self.velocity = (max_vel / v_norm) * self.velocity
-            elif v_norm < min_vel:
-                self.velocity = (min_vel / v_norm) * self.velocity
+            if self._vnorm > max_vel:
+                self.velocity = (max_vel / self._vnorm) * self.velocity
+                self._vnorm = max_vel
+            elif self._vnorm < min_vel:
+                self.velocity = (min_vel / self._vnorm) * self.velocity
+                self._vnorm = min_vel
 
 
     @property
@@ -55,7 +57,7 @@ class Actor(ABC):
         """
         :return:  numpy version of the velocity
         """
-        return numpy.array([self._velocity.vel_x, self._velocity.vel_y])
+        return self._velocity
 
     @velocity.setter
     def velocity(self, updated_velocity_array: Tuple[float, float]):
@@ -63,8 +65,14 @@ class Actor(ABC):
         :param updated_velocity_array:  any structure having a first and second indexable element
         :return: None
         """
-        self._velocity = Velocity(updated_velocity_array[0], updated_velocity_array[1])
+        self._velocity[0] = updated_velocity_array[0]
+        self._velocity[1] = updated_velocity_array[1]
+        self._vnorm = numpy.linalg.norm(self._velocity)
         self.throttle_velocity()
+
+    @property
+    def vnorm(self):
+        return self._vnorm
 
     @property
     def centroid(self):
@@ -81,10 +89,10 @@ class Actor(ABC):
         :return: None, mutates in place
         """
         if relative_distance is None or relative_distance >= 1:
-            x_offset = self._velocity.vel_x
-            y_offset = self._velocity.vel_y
+            x_offset = self._velocity[0]
+            y_offset = self._velocity[1]
         else:
-            line_segment = LineString([self._shape.centroid, (self._velocity.vel_x, self._velocity.vel_y)])
+            line_segment = LineString([self._shape.centroid, self.centroid + self._velocity])
             interp_point = line_segment.interpolate(relative_distance, normalized=True)
             x_offset = interp_point.x - self._shape.centroid.x
             y_offset = interp_point.y - self._shape.centroid.y
@@ -98,10 +106,10 @@ class Actor(ABC):
         :return: None, mutates in place
         """
         if relative_distance is None or relative_distance >= 1:
-            x_offset = self._velocity.vel_x
-            y_offset = self._velocity.vel_y
+            x_offset = self._velocity[0]
+            y_offset = self._velocity[1]
         else:
-            line_segment = LineString([self._shape.centroid, (self._velocity.vel_x, self._velocity.vel_y)])
+            line_segment = LineString([self._shape.centroid, self.centroid + self._velocity])
             interp_point = line_segment.interpolate(relative_distance, normalized=True)
             x_offset = interp_point.x - self._shape.centroid.x
             y_offset = interp_point.y - self._shape.centroid.y
@@ -138,11 +146,11 @@ class StationaryActor(Actor, ABC):
         super().__init__(name, polygon, Velocity(0, 0), collision_enabled, rebound_enabled)
 
     @property
-    def velocity(self) -> Velocity:
-        return self._velocity
+    def velocity(self):
+        return super().velocity
 
     @velocity.setter
-    def velocity(self, updated_velocity: Velocity):
+    def velocity(self, updated_velocity: Tuple[int,int]):
         pass
 
     def move_forward(self, relative_distance=1):

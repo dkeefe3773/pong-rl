@@ -26,13 +26,13 @@ def calculate_potential_collision(actor1: Actor, actor2: Actor) -> int:
     Two actors may collide if their projected paths cross
     :param actor1:
     :param actor2:
-    :return: if no collision possible: 0, otherwise 1
+    :return: if no collision possible: false, otherwise true
     """
-    if not (actor1.is_collision_enabled() and actor2.is_collision_enabled()
-        or (actor1 is actor2)
-        or (numpy.linalg.norm(actor1.velocity) == 0 and numpy.linalg.norm(actor2.velocity) == 0)):
-    # can't collide unless both have collision enabled, can't collide with self
-        return 0
+    if not actor1.is_collision_enabled() or \
+            not actor2.is_collision_enabled() or \
+            (actor1 is actor2) or \
+            (actor1.vnorm == 0 and actor2.vnorm == 0):
+        return False
 
     actor1_line_string = LineString(
         [actor1.shape.centroid, (actor1.centroid[0] + actor1.velocity[0], actor1.centroid[1] + actor1.velocity[1])])
@@ -53,8 +53,8 @@ def calculate_potential_collision(actor1: Actor, actor2: Actor) -> int:
         actor_2_teleported_shape: BaseGeometry = affinity.translate(actor2.shape, actor_2_delta_x, actor_2_delta_y)
 
         if actor_1_teleported_shape.intersects(actor_2_teleported_shape):
-            return 1
-    return 0
+            return True
+    return False
 
 
 class ActorPairCollidor(ABC):
