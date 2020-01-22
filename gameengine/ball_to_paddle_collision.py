@@ -9,6 +9,7 @@ from shapely import ops
 from config import logging_configurator, property_configurator
 from gameengine.collision_engine import ActorPairCollidor
 from gameengine.gameactors import Ball, Paddle, BallFlavor
+from utils.measures import ureg
 
 logger = logging_configurator.get_logger(__name__)
 MAX_ANGLE = property_configurator.ball_paddle_collision_config.max_angle_quantity
@@ -30,6 +31,7 @@ def update_primary_ball(ball: Ball, paddle: Paddle):
 
     nearest_ball_point, nearest_poly_point = shapely.ops.nearest_points(ball.shape, paddle.shape)
     paddle_hit_x, paddle_hit_y = list(nearest_poly_point.coords)[0]
+    logger.info(f"Ball hit paddle at {paddle_hit_y}")
 
     paddle_min_x, paddle_min_y, paddle_max_x, paddle_max_y = paddle.shape.bounds
     paddle_half_lenth = (paddle_max_y - paddle_min_y) / 2.0
@@ -38,13 +40,16 @@ def update_primary_ball(ball: Ball, paddle: Paddle):
     normalized_hit_distance_from_center = sorted([0, hit_distance_from_center / paddle_half_lenth, 1])[1]
     rebound_angle = MAX_ANGLE * normalized_hit_distance_from_center
 
+    # try to avoid horizontal back and forth
+    # if rebound_angle.magnitude < 0.5:
+    #     rebound_angle = 0.5 * ureg.angular_degree
+
     rebound_vel_x = ball.vnorm * math.cos(rebound_angle.to_base_units().magnitude)
     rebound_vel_x = rebound_vel_x if ball.velocity[0] < 0 else -rebound_vel_x
 
     rebound_vel_y = ball.vnorm * math.sin(rebound_angle.to_base_units().magnitude)
     rebound_vel_y = -rebound_vel_y if paddle_hit_y < paddle_mid_y else rebound_vel_y
     ball.velocity = (rebound_vel_x, rebound_vel_y)
-
 
 class CollisionStrategyByFlavor:
     def __init__(self, primary_ball_callable_provider: DelegatedCallable):
