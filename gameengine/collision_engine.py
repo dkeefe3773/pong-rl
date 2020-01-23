@@ -45,11 +45,6 @@ class ActorPairCollidor(ABC):
     def update_pair_state(self, actor1: Actor, actor2: Actor):
         pass
 
-
-class NoOpPairCollision(ActorPairCollidor):
-    def update_pair_state(self, actor1: Actor, actor2: Actor):
-        pass
-
 class CollisionPairHandlerFactory:
     def __init__(self, ball_to_ball_handler: ActorPairCollidor,
                  ball_to_barrier_handler: ActorPairCollidor,
