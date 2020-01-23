@@ -1,7 +1,7 @@
 # to get rid of alsa sound errors: see https://raspberrypi.stackexchange.com/questions/83254/pygame-and-alsa-lib-error
 import os
 import sys
-from queue import Queue
+from queue import Queue, Empty
 
 from pygame.time import Clock
 from shapely.geometry import Polygon
@@ -340,9 +340,16 @@ class DefaultPongRenderer:
             self.arena.reset_starting_positions()
 
     def handle_paddle_actions(self):
-        # get actions from the queue
-        updated_left_paddle_action: PaddleAction = self.left_paddle_queue.get(timeout=ACTION_QUEUE_TIMEOUT)
-        updated_right_paddle_action: PaddleAction = self.right_paddle_queue.get(timeout=ACTION_QUEUE_TIMEOUT)
+        # get actions from the queue.  Oddly have to use exception as case where nothing in queue
+        try:
+            updated_left_paddle_action: PaddleAction = self.left_paddle_queue.get(timeout=ACTION_QUEUE_TIMEOUT)
+        except Empty:
+            updated_left_paddle_action = None
+
+        try:
+            updated_right_paddle_action: PaddleAction = self.right_paddle_queue.get(timeout=ACTION_QUEUE_TIMEOUT)
+        except Empty:
+            updated_right_paddle_action = None
 
         # assign the paddle action to the working action if not None, otherwise working action remains unchanged
         if updated_left_paddle_action: self.left_paddle_action = updated_left_paddle_action
