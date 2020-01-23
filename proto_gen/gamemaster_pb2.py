@@ -22,7 +22,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x10gamemaster.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"g\n\x10PlayerIdentifier\x12\x13\n\x0bplayer_name\x18\x01 \x01(\t\x12\x1c\n\x14paddle_strategy_name\x18\x02 \x01(\t\x12 \n\x0bpaddle_type\x18\x03 \x01(\x0e\x32\x0b.PaddleType\"\x7f\n\tGameState\x12.\n\nstate_time\x18\x01 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12\x17\n\x0fstate_iteration\x18\x02 \x01(\x04\x12)\n\x0ewinning_player\x18\x03 \x01(\x0b\x32\x11.PlayerIdentifier\"<\n\x0cPaddleAction\x12,\n\x11player_identifier\x18\x01 \x01(\x0b\x32\x11.PlayerIdentifier*.\n\nPaddleType\x12\x0b\n\x07NOT_SET\x10\x00\x12\x08\n\x04LEFT\x10\x01\x12\t\n\x05RIGHT\x10\x02\x32\xc8\x01\n\nGameMaster\x12\x36\n\x11stream_game_state\x12\x11.PlayerIdentifier\x1a\n.GameState\"\x00\x30\x01\x12>\n\x0fregister_player\x12\x11.PlayerIdentifier\x1a\x16.google.protobuf.Empty\"\x00\x12\x42\n\x15submit_paddle_actions\x12\r.PaddleAction\x1a\x16.google.protobuf.Empty\"\x00(\x01\x62\x06proto3')
+  serialized_pb=_b('\n\x10gamemaster.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"g\n\x10PlayerIdentifier\x12\x13\n\x0bplayer_name\x18\x01 \x01(\t\x12\x1c\n\x14paddle_strategy_name\x18\x02 \x01(\t\x12 \n\x0bpaddle_type\x18\x03 \x01(\x0e\x32\x0b.PaddleType\"\x1d\n\x05\x43oord\x12\t\n\x01x\x18\x01 \x01(\r\x12\t\n\x01y\x18\x02 \x01(\r\"?\n\x05\x41\x63tor\x12\x1e\n\nactor_type\x18\x01 \x01(\x0e\x32\n.ActorType\x12\x16\n\x06\x63oords\x18\x02 \x03(\x0b\x32\x06.Coord\"l\n\tGameState\x12.\n\nstate_time\x18\x01 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12\x17\n\x0fstate_iteration\x18\x02 \x01(\x04\x12\x16\n\x06\x61\x63tors\x18\x03 \x03(\x0b\x32\x06.Actor\"h\n\x0cPaddleAction\x12,\n\x11player_identifier\x18\x01 \x01(\x0b\x32\x11.PlayerIdentifier\x12*\n\x10paddle_directive\x18\x02 \x01(\x0e\x32\x10.PaddleDirective*.\n\nPaddleType\x12\x0b\n\x07NOT_SET\x10\x00\x12\x08\n\x04LEFT\x10\x01\x12\t\n\x05RIGHT\x10\x02*@\n\tActorType\x12\x0f\n\x0bLEFT_PADDLE\x10\x00\x12\x10\n\x0cRIGHT_PADDLE\x10\x01\x12\x10\n\x0cPRIMARY_BALL\x10\x03*3\n\x0fPaddleDirective\x12\x06\n\x02UP\x10\x00\x12\x08\n\x04\x44OWN\x10\x01\x12\x0e\n\nSTATIONARY\x10\x02\x32\xc8\x01\n\nGameMaster\x12\x36\n\x11stream_game_state\x12\x11.PlayerIdentifier\x1a\n.GameState\"\x00\x30\x01\x12>\n\x0fregister_player\x12\x11.PlayerIdentifier\x1a\x16.google.protobuf.Empty\"\x00\x12\x42\n\x15submit_paddle_actions\x12\r.PaddleAction\x1a\x16.google.protobuf.Empty\"\x00(\x01\x62\x06proto3')
   ,
   dependencies=[google_dot_protobuf_dot_empty__pb2.DESCRIPTOR,google_dot_protobuf_dot_timestamp__pb2.DESCRIPTOR,])
 
@@ -47,15 +47,75 @@ _PADDLETYPE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=378,
-  serialized_end=424,
+  serialized_start=499,
+  serialized_end=545,
 )
 _sym_db.RegisterEnumDescriptor(_PADDLETYPE)
 
 PaddleType = enum_type_wrapper.EnumTypeWrapper(_PADDLETYPE)
+_ACTORTYPE = _descriptor.EnumDescriptor(
+  name='ActorType',
+  full_name='ActorType',
+  filename=None,
+  file=DESCRIPTOR,
+  values=[
+    _descriptor.EnumValueDescriptor(
+      name='LEFT_PADDLE', index=0, number=0,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='RIGHT_PADDLE', index=1, number=1,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='PRIMARY_BALL', index=2, number=3,
+      serialized_options=None,
+      type=None),
+  ],
+  containing_type=None,
+  serialized_options=None,
+  serialized_start=547,
+  serialized_end=611,
+)
+_sym_db.RegisterEnumDescriptor(_ACTORTYPE)
+
+ActorType = enum_type_wrapper.EnumTypeWrapper(_ACTORTYPE)
+_PADDLEDIRECTIVE = _descriptor.EnumDescriptor(
+  name='PaddleDirective',
+  full_name='PaddleDirective',
+  filename=None,
+  file=DESCRIPTOR,
+  values=[
+    _descriptor.EnumValueDescriptor(
+      name='UP', index=0, number=0,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='DOWN', index=1, number=1,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='STATIONARY', index=2, number=2,
+      serialized_options=None,
+      type=None),
+  ],
+  containing_type=None,
+  serialized_options=None,
+  serialized_start=613,
+  serialized_end=664,
+)
+_sym_db.RegisterEnumDescriptor(_PADDLEDIRECTIVE)
+
+PaddleDirective = enum_type_wrapper.EnumTypeWrapper(_PADDLEDIRECTIVE)
 NOT_SET = 0
 LEFT = 1
 RIGHT = 2
+LEFT_PADDLE = 0
+RIGHT_PADDLE = 1
+PRIMARY_BALL = 3
+UP = 0
+DOWN = 1
+STATIONARY = 2
 
 
 
@@ -104,6 +164,82 @@ _PLAYERIDENTIFIER = _descriptor.Descriptor(
 )
 
 
+_COORD = _descriptor.Descriptor(
+  name='Coord',
+  full_name='Coord',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='x', full_name='Coord.x', index=0,
+      number=1, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='y', full_name='Coord.y', index=1,
+      number=2, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=187,
+  serialized_end=216,
+)
+
+
+_ACTOR = _descriptor.Descriptor(
+  name='Actor',
+  full_name='Actor',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='actor_type', full_name='Actor.actor_type', index=0,
+      number=1, type=14, cpp_type=8, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='coords', full_name='Actor.coords', index=1,
+      number=2, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=218,
+  serialized_end=281,
+)
+
+
 _GAMESTATE = _descriptor.Descriptor(
   name='GameState',
   full_name='GameState',
@@ -126,9 +262,9 @@ _GAMESTATE = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='winning_player', full_name='GameState.winning_player', index=2,
-      number=3, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
+      name='actors', full_name='GameState.actors', index=2,
+      number=3, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
@@ -144,8 +280,8 @@ _GAMESTATE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=187,
-  serialized_end=314,
+  serialized_start=283,
+  serialized_end=391,
 )
 
 
@@ -163,6 +299,13 @@ _PADDLEACTION = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='paddle_directive', full_name='PaddleAction.paddle_directive', index=1,
+      number=2, type=14, cpp_type=8, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -175,18 +318,25 @@ _PADDLEACTION = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=316,
-  serialized_end=376,
+  serialized_start=393,
+  serialized_end=497,
 )
 
 _PLAYERIDENTIFIER.fields_by_name['paddle_type'].enum_type = _PADDLETYPE
+_ACTOR.fields_by_name['actor_type'].enum_type = _ACTORTYPE
+_ACTOR.fields_by_name['coords'].message_type = _COORD
 _GAMESTATE.fields_by_name['state_time'].message_type = google_dot_protobuf_dot_timestamp__pb2._TIMESTAMP
-_GAMESTATE.fields_by_name['winning_player'].message_type = _PLAYERIDENTIFIER
+_GAMESTATE.fields_by_name['actors'].message_type = _ACTOR
 _PADDLEACTION.fields_by_name['player_identifier'].message_type = _PLAYERIDENTIFIER
+_PADDLEACTION.fields_by_name['paddle_directive'].enum_type = _PADDLEDIRECTIVE
 DESCRIPTOR.message_types_by_name['PlayerIdentifier'] = _PLAYERIDENTIFIER
+DESCRIPTOR.message_types_by_name['Coord'] = _COORD
+DESCRIPTOR.message_types_by_name['Actor'] = _ACTOR
 DESCRIPTOR.message_types_by_name['GameState'] = _GAMESTATE
 DESCRIPTOR.message_types_by_name['PaddleAction'] = _PADDLEACTION
 DESCRIPTOR.enum_types_by_name['PaddleType'] = _PADDLETYPE
+DESCRIPTOR.enum_types_by_name['ActorType'] = _ACTORTYPE
+DESCRIPTOR.enum_types_by_name['PaddleDirective'] = _PADDLEDIRECTIVE
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 PlayerIdentifier = _reflection.GeneratedProtocolMessageType('PlayerIdentifier', (_message.Message,), dict(
@@ -195,6 +345,20 @@ PlayerIdentifier = _reflection.GeneratedProtocolMessageType('PlayerIdentifier', 
   # @@protoc_insertion_point(class_scope:PlayerIdentifier)
   ))
 _sym_db.RegisterMessage(PlayerIdentifier)
+
+Coord = _reflection.GeneratedProtocolMessageType('Coord', (_message.Message,), dict(
+  DESCRIPTOR = _COORD,
+  __module__ = 'gamemaster_pb2'
+  # @@protoc_insertion_point(class_scope:Coord)
+  ))
+_sym_db.RegisterMessage(Coord)
+
+Actor = _reflection.GeneratedProtocolMessageType('Actor', (_message.Message,), dict(
+  DESCRIPTOR = _ACTOR,
+  __module__ = 'gamemaster_pb2'
+  # @@protoc_insertion_point(class_scope:Actor)
+  ))
+_sym_db.RegisterMessage(Actor)
 
 GameState = _reflection.GeneratedProtocolMessageType('GameState', (_message.Message,), dict(
   DESCRIPTOR = _GAMESTATE,
@@ -218,8 +382,8 @@ _GAMEMASTER = _descriptor.ServiceDescriptor(
   file=DESCRIPTOR,
   index=0,
   serialized_options=None,
-  serialized_start=427,
-  serialized_end=627,
+  serialized_start=667,
+  serialized_end=867,
   methods=[
   _descriptor.MethodDescriptor(
     name='stream_game_state',

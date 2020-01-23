@@ -62,7 +62,7 @@ class IncidentAngleRebounder(ActorPairCollidor):
 
         logger.debug(f"Begin incident angle collision modeling for {ball.name} and {barrier.name}")
         # lets make ball back up so it is not intersecting anymore.  We will try to back up one pixel at a time
-        ball_backup_distance = 1. / numpy.linalg.norm(ball.velocity)
+        ball_backup_distance = max(1.0, 1. / ball.vnorm)
         while actors_intersect:
             logger.debug("Moving ball backwards one pixel at a time")
             ball.move_backward(ball_backup_distance)

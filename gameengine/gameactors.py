@@ -8,17 +8,19 @@ from shapely import affinity
 from shapely.geometry import Polygon, LineString
 from shapely.geometry.base import BaseGeometry
 
+from config import logging_configurator
 from config.property_configurator import game_engine_config
+logger = logging_configurator.get_logger(__name__)
 
 Velocity = namedtuple('Velocity', ['vel_x', 'vel_y'])
-
 
 class Actor(ABC):
     def __init__(self, name: str, shape: BaseGeometry, velocity: Velocity, collision_enabled: bool,
                  rebound_enabled: bool):
         self.name = name
         self._shape = shape
-        self._velocity = velocity
+        self._velocity = numpy.array([velocity.vel_x, velocity.vel_y], dtype=float)
+        self._vnorm = numpy.linalg.norm(self._velocity)
         self._collision_enabled = collision_enabled
         self._rebound_enabled = rebound_enabled
 
@@ -36,16 +38,16 @@ class Actor(ABC):
         :return:  None
         """
         if not isinstance(self, StationaryActor):
-            v_norm = numpy.linalg.norm(self.velocity)
-            if v_norm == 0:
+            if self._vnorm == 0:
                 return
 
             min_vel, max_vel = self.speed_bound
-            if v_norm > max_vel:
-                self.velocity = (max_vel / v_norm) * self.velocity
-            elif v_norm < min_vel:
-                self.velocity = (min_vel / v_norm) * self.velocity
-
+            if self._vnorm > max_vel:
+                self._velocity = (max_vel / self._vnorm) * self.velocity
+                self._vnorm = max_vel
+            elif self._vnorm < min_vel:
+                self._velocity = (min_vel / self._vnorm) * self.velocity
+                self._vnorm = min_vel
 
     @property
     def shape(self) -> BaseGeometry:
@@ -56,7 +58,7 @@ class Actor(ABC):
         """
         :return:  numpy version of the velocity
         """
-        return numpy.array([self._velocity.vel_x, self._velocity.vel_y])
+        return self._velocity
 
     @velocity.setter
     def velocity(self, updated_velocity_array: Tuple[float, float]):
@@ -64,8 +66,14 @@ class Actor(ABC):
         :param updated_velocity_array:  any structure having a first and second indexable element
         :return: None
         """
-        self._velocity = Velocity(updated_velocity_array[0], updated_velocity_array[1])
+        self._velocity[0] = updated_velocity_array[0]
+        self._velocity[1] = updated_velocity_array[1]
+        self._vnorm = numpy.linalg.norm(self._velocity)
         self.throttle_velocity()
+
+    @property
+    def vnorm(self):
+        return self._vnorm
 
     @property
     def centroid(self):
@@ -82,10 +90,10 @@ class Actor(ABC):
         :return: None, mutates in place
         """
         if relative_distance is None or relative_distance >= 1:
-            x_offset = self._velocity.vel_x
-            y_offset = self._velocity.vel_y
+            x_offset = self._velocity[0]
+            y_offset = self._velocity[1]
         else:
-            line_segment = LineString([self._shape.centroid, (self._velocity.vel_x, self._velocity.vel_y)])
+            line_segment = LineString([self._shape.centroid, self.centroid + self._velocity])
             interp_point = line_segment.interpolate(relative_distance, normalized=True)
             x_offset = interp_point.x - self._shape.centroid.x
             y_offset = interp_point.y - self._shape.centroid.y
@@ -99,10 +107,10 @@ class Actor(ABC):
         :return: None, mutates in place
         """
         if relative_distance is None or relative_distance >= 1:
-            x_offset = self._velocity.vel_x
-            y_offset = self._velocity.vel_y
+            x_offset = self._velocity[0]
+            y_offset = self._velocity[1]
         else:
-            line_segment = LineString([self._shape.centroid, (self._velocity.vel_x, self._velocity.vel_y)])
+            line_segment = LineString([self._shape.centroid, self.centroid + self._velocity])
             interp_point = line_segment.interpolate(relative_distance, normalized=True)
             x_offset = interp_point.x - self._shape.centroid.x
             y_offset = interp_point.y - self._shape.centroid.y
@@ -139,11 +147,11 @@ class StationaryActor(Actor, ABC):
         super().__init__(name, polygon, Velocity(0, 0), collision_enabled, rebound_enabled)
 
     @property
-    def velocity(self) -> Velocity:
-        return self._velocity
+    def velocity(self):
+        return super().velocity
 
     @velocity.setter
-    def velocity(self, updated_velocity: Velocity):
+    def velocity(self, updated_velocity: Tuple[int,int]):
         pass
 
     def move_forward(self, relative_distance=1):
@@ -165,6 +173,9 @@ class Net(StationaryActor):
     def __init__(self, name: str, polygon: Polygon):
         super().__init__(name, polygon, collision_enabled=False, rebound_enabled=False)
 
+class BackLine(StationaryActor):
+    def __init__(self, name: str, polygon: Polygon):
+        super().__init__(name, polygon, collision_enabled=False, rebound_enabled=False)
 
 class Paddle(Actor):
     def __init__(self, name: str, polygon: Polygon, velocity: Velocity):
@@ -178,24 +189,25 @@ class Paddle(Actor):
     def speed_bound(self) -> Tuple[int, int]:
         return (self._min_paddle_speed, self._max_paddle_speed)
 
-class BallColor(Enum):
-    WHITE = 1
-    RED = 2
-    GREEN = 3
+class BallFlavor(Enum):
+    PRIMARY = 1
+    GROW_PADDLE = 2
+    SHRINK_PADDLE = 3
 
 
 class Ball(Actor):
-    def __init__(self, name: str, polygon: Polygon, velocity: Velocity, color: BallColor):
+    def __init__(self, name: str, polygon: Polygon, velocity: Velocity, flavor: BallFlavor):
         """
         :param name:      an identifier for the ball
         :param polygon:   shape of the ball
         :param velocity:  initial speed of the ball
-        :param color:     the ball color.  Different color balls will have different collision models
+        :param flavor:    the ball flavor.  Different flavored balls might have different collision models and effects
+        on other actors
         """
         super().__init__(name, polygon, velocity, collision_enabled=True, rebound_enabled=True)
         self._max_ball_speed = game_engine_config.max_ball_speed
         self._min_ball_speed = game_engine_config.min_ball_speed
-        self.color = color
+        self.flavor = flavor
         if numpy.linalg.norm(self.velocity) > 0:
             self.throttle_velocity()
 

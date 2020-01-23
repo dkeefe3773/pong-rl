@@ -1,23 +1,34 @@
 # to get rid of alsa sound errors: see https://raspberrypi.stackexchange.com/questions/83254/pygame-and-alsa-lib-error
 import os
+import sys
+from queue import Queue
+
+from pygame.time import Clock
+from shapely.geometry import Polygon
+
+from gameengine.gameactors import Actor, Paddle, Ball, Net, BallFlavor, BackLine
+from gamerender.caches import CachedScoreFontImages
 
 os.environ['SDL_AUDIODRIVER'] = 'dsp'
 
 from collections import namedtuple
 from threading import RLock
-from typing import Dict, Optional, List
+from typing import Dict, List, Tuple, Optional
 
 import pygame
 from pygame import font
 
 from config import logging_configurator
 from config.property_configurator import game_render_config
+from config.property_configurator import game_engine_config
+from config.property_configurator import server_client_communication_config
 from gameengine.arena import Arena
 from gameengine.collision_engine import GameCollisionEngine
-from gamerender.scorecards import StandardScoreCard
-from proto_gen.gamemaster_pb2 import PlayerIdentifier, PaddleType
+from gamerender.scorecards import ScoreKeeper
+from proto_gen.gamemaster_pb2 import PlayerIdentifier, PaddleType, PaddleAction, PaddleDirective
 
 logger = logging_configurator.get_logger(__name__)
+color_config = game_render_config.color_config
 
 # a puzzling requirement for 'initializing' all the pygame modules.
 # apparently, if performance is an issue, you just initialize the modules you need, but not a problem right now
@@ -30,134 +41,84 @@ SEPARATOR = 5
 
 registration_lock = RLock()
 game_lock = RLock()
-pygame.display.set_caption("Pong is only for the brave")
+pygame.display.set_caption("Pong!")
 
 # surface is expected to be a pygame surface and pos is (x,y) of where surface is to be rendered on the canvas
 GamePane = namedtuple("GamePane", ['surface', 'pos'])
 
 # player_id is expected to be PlayerIdentifer object and scorecard a StandardScoreCard
-RegisteredPlayer = namedtuple("RegisteredPlayer", ['player_id', 'scorecard'])
+RegisteredPlayer = namedtuple("RegisteredPlayer", ['player_id'])
+
+# game is capped at this fps
+FPS_CAP = game_render_config.fps_cap
+
+# the blocking timeout for the queue
+ACTION_QUEUE_TIMEOUT = server_client_communication_config.action_queue_timeout
+
+# the speed of the paddle in the y direction
+DEFAULT_PADDLE_SPEED = game_engine_config.default_paddle_speed
 
 
-class CachedScoreFontImages:
-    def __init__(self, scorecard: StandardScoreCard):
-        self.fontconfig = game_render_config.score_board_font
-        self.font = pygame.font.SysFont(self.fontconfig.name,
-                                        self.fontconfig.size,
-                                        self.fontconfig.is_bold,
-                                        self.fontconfig.is_italic)
-        self._player_name: Optional[str] = None
-        self._paddle_strategy_name: Optional[str] = None
-        self._match_points: Optional[int] = None
-        self._total_points: Optional[int] = None
-        self._matches_won: Optional[int] = None
-        self.name_image: Optional[pygame.Surface] = None
-        self.paddle_stategy_image: Optional[pygame.Surface] = None
-        self.match_points_image: Optional[pygame.Surface] = None
-        self.total_points_image: Optional[pygame.Surface] = None
-        self.matches_won_image: Optional[pygame.Surface] = None
-        self.update(scorecard)
+def color_from_ball(actor: Ball) -> Tuple[int, int, int]:
+    if actor.flavor is BallFlavor.PRIMARY:
+        color = color_config.primary_ball_color
+    elif actor.flavor is BallFlavor.GROW_PADDLE:
+        color = color_config.grow_paddle_ball_color
+    elif actor.flavor is BallFlavor.SHRINK_PADDLE:
+        color = color_config.shrink_paddle_ball_color
+    else:
+        color = (0, 0, 0)
+    return color
 
-    def ordered_images(self) -> List[pygame.Surface]:
-        return [self.name_image, self.paddle_stategy_image, self.match_points_image, self.total_points_image,
-                self.matches_won_image]
 
-    @property
-    def is_updated(self):
-        return self._image_updated
+def color_from_actor(actor: Actor) -> Tuple[int, int, int]:
+    if isinstance(actor, Paddle):
+        color = color_config.paddle_color
+    elif isinstance(actor, Ball):
+        color = color_from_ball(actor)
+    elif isinstance(actor, Net):
+        color = color_config.net_color
+    elif isinstance(actor, BackLine):
+        color = color_config.backline_color
+    else:
+        color = color_config.obstacle_color
+    return color
 
-    @property
-    def player_name(self) -> str:
-        return self._player_name
+paddle_directive_to_velocity = {
+    PaddleDirective.UP : (0,DEFAULT_PADDLE_SPEED),
+    PaddleDirective.DOWN : (0, -DEFAULT_PADDLE_SPEED),
+    PaddleDirective.STATIONARY: (0, 0)
+    }
 
-    @player_name.setter
-    def player_name(self, name: str):
-        if name != self._player_name:
-            self._player_name = name
-            self._update_name_image()
-            self._image_updated = True
-
-    @property
-    def paddle_strategy_name(self) -> str:
-        return self._paddle_strategy_name
-
-    @paddle_strategy_name.setter
-    def paddle_strategy_name(self, name):
-        if name != self._paddle_strategy_name:
-            self._paddle_strategy_name = name
-            self._update_strategy_image()
-            self._image_updated = True
-
-    @property
-    def match_points(self) -> int:
-        return self._match_points
-
-    @match_points.setter
-    def match_points(self, points: int):
-        if points != self._match_points:
-            self._match_points = points
-            self._update_match_points_image()
-            self._image_updated = True
-
-    @property
-    def total_points(self) -> int:
-        return self._total_points
-
-    @total_points.setter
-    def total_points(self, points: int):
-        if points != self._total_points:
-            self._total_points = points
-            self._update_total_points_image()
-            self._image_updated = True
-
-    @property
-    def matches_won(self) -> int:
-        return self._matches_won
-
-    @matches_won.setter
-    def matches_won(self, count: int):
-        if count != self._matches_won:
-            self._matches_won = count
-            self._update_matches_won_image()
-            self._image_updated = True
-
-    def update(self, scorecard: StandardScoreCard):
-        self.image_updated = False
-        self.player_name = scorecard.player_identifier.player_name
-        self.paddle_strategy_name = scorecard.player_identifier.paddle_strategy_name
-        self.match_points = scorecard.current_match_points_won
-        self.total_points = scorecard.total_points_won
-        self.matches_won = scorecard.matches_won
-
-    def _update_name_image(self):
-        self.name_image = self.font.render(f"Player Name: {self.player_name}", True, self.fontconfig.color)
-
-    def _update_strategy_image(self):
-        self.paddle_stategy_image = self.font.render(f"Paddle Strategy: {self.paddle_strategy_name}", True, self.fontconfig.color)
-
-    def _update_match_points_image(self):
-        self.match_points_image = self.font.render(f"Match Points: {self.match_points}", True, self.fontconfig.color)
-
-    def _update_total_points_image(self):
-        self.total_points_image = self.font.render(f"Total Points: {self.total_points}", True,  self.fontconfig.color)
-
-    def _update_matches_won_image(self):
-        self.matches_won_image = self.font.render(f"Match Count: {self.matches_won}", True,  self.fontconfig.color)
+def get_paddle_velocity(paddle_directive: PaddleDirective) -> Tuple[int,int]:
+    """
+    :param paddle_directive:  a directive for paddle direction
+    :return:  the velocity as 2-tuple
+    """
+    return paddle_directive_to_velocity.get(paddle_directive, (0,0))
 
 
 class DefaultPongRenderer:
-    def __init__(self, arena: Arena, game_engine: GameCollisionEngine):
+    def __init__(self, arena: Arena, game_engine: GameCollisionEngine, left_paddle_queue: Queue,
+                 right_paddle_queue: Queue, game_state_queue: Queue):
+        """
+
+        :param arena:                This contains all the actors
+        :param game_engine:          Provices the collision physics
+        :param left_paddle_queue:    Thread safe queue for incoming left paddle actions
+        :param right_paddle_queue:   Thread safe queue for incoming right paddle actions
+        :param game_state_queue:     Thread safe queue for incoming outrgoing game state
+        """
         self.arena = arena
         self.game_engine = game_engine
+        self.left_paddle_queue = left_paddle_queue
+        self.right_paddle_queue = right_paddle_queue
+        self.game_state_queue = game_state_queue
 
         self.scoreboard_font_info = game_render_config.score_board_font
         self.registration_font_info = game_render_config.registration_font
         self.commencement_font_info = game_render_config.commencement_font
-
-        self.scoreboard_font = pygame.font.SysFont(self.scoreboard_font_info.name,
-                                                   self.scoreboard_font_info.size,
-                                                   self.scoreboard_font_info.is_bold,
-                                                   self.scoreboard_font_info.is_italic)
+        self.fps_font_info = game_render_config.fps_font
 
         self.registration_font = pygame.font.SysFont(self.registration_font_info.name,
                                                      self.registration_font_info.size,
@@ -168,6 +129,11 @@ class DefaultPongRenderer:
                                                      self.commencement_font_info.size,
                                                      self.commencement_font_info.is_bold,
                                                      self.commencement_font_info.is_italic)
+
+        self.fps_font = pygame.font.SysFont(self.fps_font_info.name,
+                                            self.fps_font_info.size,
+                                            self.fps_font_info.is_bold,
+                                            self.fps_font_info.is_italic)
 
         # the game canvas from top to bottom comprises three 'panes' stretched fully across canvas width:
         # Scoreboard surface + buffer
@@ -196,8 +162,14 @@ class DefaultPongRenderer:
         # specify position for game commencement notification
         self.commencement_pos = (0, self.canvas_height // 2)
 
+        # specify position of fps counter relative to meta surface
+        self.fps_pos = (self.canvas_width - 100, META_DATA_HEIGHT // 2)
+
         self.game_started: bool = False
         self.registration_closed: bool = False
+
+        # tracks our scoring
+        self.scorekeeper: Optional[ScoreKeeper] = None
 
     def register_player(self, player: PlayerIdentifier):
         with registration_lock:
@@ -214,9 +186,8 @@ class DefaultPongRenderer:
                     f"Cannot register player {player.player_name}-{player.paddle_strategy_name} because {player.paddle_type} already registered")
                 return
 
-            scorecard = StandardScoreCard(player)
-            self.registered_player_by_paddle_type[player.paddle_type] = RegisteredPlayer(player, scorecard)
-            self.cached_score_fonts_by_paddle_type[player.paddle_type] = CachedScoreFontImages(scorecard)
+            self.registered_player_by_paddle_type[player.paddle_type] = RegisteredPlayer(player)
+            self.cached_score_fonts_by_paddle_type[player.paddle_type] = CachedScoreFontImages()
 
             for paddle_type, registered_player in self.registered_player_by_paddle_type.items():
                 player_info_str = ":".join(
@@ -228,38 +199,43 @@ class DefaultPongRenderer:
             self.registration_closed = len(self.registered_player_by_paddle_type) == 2
             pygame.display.update()
 
-    def draw_arena(self, screen):
-        pass
-        # black = (0, 0, 0)
-        # white = (255, 255, 255)
-        # screen.fill(black)
-        # pygame.draw.rect(screen, white, ((0, 0), (self.screen_width, self.screen_height)), 20)
-
     def render_commencement(self):
         blit_rectangle = None
         for countdown in reversed(range(4)):
             pygame.time.delay(1000)
             commencement_image = self.commencement_font.render(f"Pong Experience Beginning in ... {countdown}",
-                                                              True, self.commencement_font_info.color)
+                                                               True, self.commencement_font_info.color)
             if blit_rectangle:
-                self.canvas.fill((0,0,0), blit_rectangle)
+                self.canvas.fill((0, 0, 0), blit_rectangle)
             blit_rectangle = self.canvas.blit(commencement_image, self.commencement_pos)
             pygame.display.update()
 
-    def update_panes(self):
-        self.update_score_pane()
-        self.update_meta_pane()
-        self.update_arena_pane()
+    def update_panes(self) -> List[pygame.Rect]:
+        """
+        This wil blit score changes to the working canvas.
+        :return: A list of rectangles that can be used for pygame.display.update that represent
+        canvas areas that were updated
+        """
+        blitted_rectangles = []
+        blitted_rectangles.extend(self.update_score_pane())
+        blitted_rectangles.extend(self.update_meta_pane())
+        blitted_rectangles.extend(self.update_arena_pane())
+        return blitted_rectangles
 
-    def update_score_pane(self):
+    def update_score_pane(self) -> List[pygame.Rect]:
+        """
+        This wil blit score changes to the working canvas.
+        :return: A list of rectangles that can be used for pygame.display.update that represent
+        canvas areas that were updated
+        """
         surface = self.scoreboard_pane.surface
         left_score_fonts = self.cached_score_fonts_by_paddle_type[PaddleType.LEFT]
         right_score_fonts = self.cached_score_fonts_by_paddle_type[PaddleType.RIGHT]
         if not left_score_fonts.is_updated or not right_score_fonts.is_updated:
-            return
+            return []
 
         # wipe out what was there before
-        surface.fill(game_render_config.color_config.score_color)
+        surface.fill(color_config.score_color)
         spacer = self.scoreboard_font_info.size + SEPARATOR
 
         # populate left hand side
@@ -275,17 +251,85 @@ class DefaultPongRenderer:
         for font_image in right_score_fonts.ordered_images():
             surface.blit(font_image, (x_start, y_start))
             y_start += spacer
-        self.canvas.blit(surface, self.scoreboard_pane.pos)
+        return [self.canvas.blit(surface, self.scoreboard_pane.pos)]
 
-    def update_meta_pane(self):
+    def update_meta_pane(self) -> List[pygame.Rect]:
+        """
+        This wil blit score changes to the working canvas.
+        :return: A list of rectangles that can be used for pygame.display.update that represent
+        canvas areas that were updated
+        """
         surface = self.metadata_pane.surface
-        surface.fill(game_render_config.color_config.meta_color)
-        self.canvas.blit(surface, self.metadata_pane.pos)
+        surface.fill(color_config.meta_color)
+        fps_string = str(int(self.fps_clock.get_fps()))
+        fps_image = self.fps_font.render(f"fps: {fps_string}", True, self.fps_font_info.color)
+        surface.blit(fps_image, self.fps_pos)
+        return [self.canvas.blit(surface, self.metadata_pane.pos)]
 
-    def update_arena_pane(self):
+    def update_arena_pane(self) -> List[pygame.Rect]:
+        """
+        This wil blit score changes to the working canvas.
+        :return: A list of rectangles that can be used for pygame.display.update that represent
+        canvas areas that were updated
+        """
         surface = self.arena_pane.surface
-        surface.fill(game_render_config.color_config.arena_color)
-        self.canvas.blit(surface, self.arena_pane.pos)
+        surface.fill(color_config.arena_color)
+        for actor in self.arena.actors:
+            color = color_from_actor(actor)
+            shape: Polygon = actor.shape
+            coords = list(shape.exterior.coords)
+            pygame.draw.polygon(surface, color, coords)
+        return [self.canvas.blit(surface, self.arena_pane.pos)]
+
+    def initialize_scoring(self):
+        """
+        Creates a scorekeeper and also initializes the font images for the scoring surface
+        :return:
+        """
+        registered_player_ids = [player.player_id for player in self.registered_player_by_paddle_type.values()]
+        self.scorekeeper = ScoreKeeper(*registered_player_ids)
+
+        for paddle_type, registered_player in self.registered_player_by_paddle_type.items():
+            scorecard = self.scorekeeper.get_scorecard(registered_player.player_id)
+            self.cached_score_fonts_by_paddle_type[paddle_type].update(scorecard)
+
+    def update_score(self):
+        primary_ball_centroid = self.arena.primary_ball.centroid
+        left_back_line_centroid = self.arena.left_back_line.centroid
+        right_back_line_centroid = self.arena.right_back_line.centroid
+        winner_discovered = False
+        if primary_ball_centroid[0] < left_back_line_centroid[0]:
+            winning_player = self.registered_player_by_paddle_type[PaddleType.RIGHT].player_id
+            losing_player = self.registered_player_by_paddle_type[PaddleType.LEFT].player_id
+            self.scorekeeper.tally_point(winning_player, losing_player)
+            self.cached_score_fonts_by_paddle_type[PaddleType.RIGHT].update(
+                self.scorekeeper.get_scorecard(winning_player))
+            self.cached_score_fonts_by_paddle_type[PaddleType.LEFT].update(
+                self.scorekeeper.get_scorecard(losing_player))
+            winner_discovered = True
+        elif primary_ball_centroid[0] > right_back_line_centroid[0]:
+            winning_player = self.registered_player_by_paddle_type[PaddleType.LEFT].player_id
+            losing_player = self.registered_player_by_paddle_type[PaddleType.RIGHT].player_id
+            self.scorekeeper.tally_point(winning_player, losing_player)
+            self.cached_score_fonts_by_paddle_type[PaddleType.LEFT].update(
+                self.scorekeeper.get_scorecard(winning_player))
+            self.cached_score_fonts_by_paddle_type[PaddleType.RIGHT].update(
+                self.scorekeeper.get_scorecard(losing_player))
+            winner_discovered = True
+
+        if winner_discovered:
+            self.arena.reset_starting_positions()
+
+    def handle_paddle_actions(self):
+        pass
+        # left_paddle_action: PaddleAction = self.left_paddle_queue.get(timeout=ACTION_QUEUE_TIMEOUT)
+        # right_paddle_action: PaddleAction = self.right_paddle_queue.get(timeout=ACTION_QUEUE_TIMEOUT)
+        # left_paddle, right_paddle = self.arena.paddles
+        # if left_paddle_action:
+        #     left_paddle.velocity = get_paddle_velocity(left_paddle_action.paddle_directive)
+        #
+        # if right_paddle_action:
+        #     right_paddle.velocity = get_paddle_velocity(right_paddle_action.paddle_directive)
 
     def start_game(self):
         with game_lock:
@@ -298,23 +342,18 @@ class DefaultPongRenderer:
                 return
             self.game_started = True
 
+        self.initialize_scoring()
         self.render_commencement()
-        self.update_panes()
-        pygame.display.update()
-        # fps_clock = pygame.time.Clock()
-        #
-        # while True:
-        #     for event in pygame.event.get():
-        #         if event.type == pygame.QUIT:
-        #             pygame.quit()
-        #             sys.exit()
-        #
-        #     self.draw_arena(screen)
-        #
-        #     fps = self.fps_font.render(str(int(fps_clock.get_fps())), True, pygame.Color('white'))
-        #     self.canvas.blit(fps, (50, 50))
-        #     pygame.display.update()
-        #
-        #     screen_array = surfarray.array3d(screen)
-        #
-        #     fps_clock.tick(24)
+        self.fps_clock = pygame.time.Clock()
+        pygame.display.update(self.update_panes())
+
+        while True:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+
+            self.game_engine.update_state(self.arena.actors)
+            pygame.display.update(self.update_panes())
+            self.update_score()
+            self.fps_clock.tick(FPS_CAP)
