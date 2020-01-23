@@ -10,6 +10,8 @@ from shapely.geometry.base import BaseGeometry
 
 from config import logging_configurator
 from config.property_configurator import game_engine_config
+from proto_gen.gamemaster_pb2 import PaddleType
+
 logger = logging_configurator.get_logger(__name__)
 
 Velocity = namedtuple('Velocity', ['vel_x', 'vel_y'])
@@ -178,8 +180,9 @@ class BackLine(StationaryActor):
         super().__init__(name, polygon, collision_enabled=False, rebound_enabled=False)
 
 class Paddle(Actor):
-    def __init__(self, name: str, polygon: Polygon, velocity: Velocity):
+    def __init__(self, name: str, polygon: Polygon, velocity: Velocity, paddle_type: PaddleType):
         super().__init__(name, polygon, velocity, collision_enabled=True, rebound_enabled=False)
+        self.paddle_type = paddle_type
         self._max_paddle_speed = game_engine_config.max_paddle_speed
         self._min_paddle_speed = game_engine_config.min_paddle_speed
         if numpy.linalg.norm(self.velocity) > 0:

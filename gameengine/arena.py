@@ -10,6 +10,7 @@ from shapely.geometry import Polygon
 from config import property_configurator, logging_configurator
 from config.property_configurator import game_arena_config
 from gameengine.gameactors import Actor, Wall, Net, Paddle, Velocity, Ball, BallFlavor, BackLine
+from proto_gen.gamemaster_pb2 import PaddleType
 from utils.measures import ureg
 
 PADDLE_OFFSET = property_configurator.game_arena_config.paddle_offset
@@ -92,14 +93,13 @@ class Arena:
                                                 int((self.arena_height / 2.) - PADDLE_HEIGHT / 2),
                                                 PADDLE_OFFSET + PADDLE_WIDTH,
                                                 int((self.arena_height / 2.0) + PADDLE_HEIGHT / 2))
-        left_paddle = Paddle("left_paddle", left_paddle_poly, Velocity(0, 0))
+        left_paddle = Paddle("left_paddle", left_paddle_poly, Velocity(0, 0), PaddleType.LEFT)
 
         right_paddle_poly = shapely.geometry.box(self.arena_width - PADDLE_OFFSET - PADDLE_WIDTH,
                                                  int((self.arena_height / 2.) - PADDLE_HEIGHT / 2),
                                                  self.arena_width - PADDLE_OFFSET,
                                                  int((self.arena_height / 2.0) + PADDLE_HEIGHT / 2))
-        right_paddle = Paddle("right_paddle", right_paddle_poly, Velocity(0, 0))
-
+        right_paddle = Paddle("right_paddle", right_paddle_poly, Velocity(0, 0), PaddleType.RIGHT)
         self.paddles = (left_paddle, right_paddle)
 
     def find_collision_pairs(self):

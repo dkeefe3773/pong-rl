@@ -24,9 +24,11 @@ message PlayerIdentifier
 
 enum ActorType
 {
-    LEFT_PADDLE = 0;
-    RIGHT_PADDLE = 1;
+    UNKNOWN = 0;
+    LEFT_PADDLE = 1;
+    RIGHT_PADDLE = 2;
     PRIMARY_BALL = 3;
+    WALL = 4;
 }
 
 message Coord
@@ -43,7 +45,6 @@ message Actor
 
 message GameState
 {
-    google.protobuf.Timestamp state_time = 1;
     uint64 state_iteration = 2;
     repeated Actor actors = 3;
 }

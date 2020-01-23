@@ -8,6 +8,7 @@ from shapely.geometry import Polygon
 
 from gameengine.gameactors import Actor, Paddle, Ball, Net, BallFlavor, BackLine
 from gamerender.caches import CachedScoreFontImages
+from translators.proto_translations import GameStateBuilder
 
 os.environ['SDL_AUDIODRIVER'] = 'dsp'
 
@@ -84,18 +85,20 @@ def color_from_actor(actor: Actor) -> Tuple[int, int, int]:
         color = color_config.obstacle_color
     return color
 
+
 paddle_directive_to_velocity = {
-    PaddleDirective.UP : (0,DEFAULT_PADDLE_SPEED),
-    PaddleDirective.DOWN : (0, -DEFAULT_PADDLE_SPEED),
+    PaddleDirective.UP: (0, DEFAULT_PADDLE_SPEED),
+    PaddleDirective.DOWN: (0, -DEFAULT_PADDLE_SPEED),
     PaddleDirective.STATIONARY: (0, 0)
     }
 
-def get_paddle_velocity(paddle_directive: PaddleDirective) -> Tuple[int,int]:
+
+def get_paddle_velocity(paddle_directive: PaddleDirective) -> Tuple[int, int]:
     """
     :param paddle_directive:  a directive for paddle direction
     :return:  the velocity as 2-tuple
     """
-    return paddle_directive_to_velocity.get(paddle_directive, (0,0))
+    return paddle_directive_to_velocity.get(paddle_directive, (0, 0))
 
 
 class DefaultPongRenderer:
@@ -170,6 +173,13 @@ class DefaultPongRenderer:
 
         # tracks our scoring
         self.scorekeeper: Optional[ScoreKeeper] = None
+
+        # the frame
+        self.frame_index: int = 0
+
+        # initial paddle actions
+        self.left_paddle_action: Optional[PaddleAction] = None
+        self.right_paddle_action: Optional[PaddleAction] = None
 
     def register_player(self, player: PlayerIdentifier):
         with registration_lock:
@@ -281,6 +291,15 @@ class DefaultPongRenderer:
             pygame.draw.polygon(surface, color, coords)
         return [self.canvas.blit(surface, self.arena_pane.pos)]
 
+    def initialize_paddle_actions(self):
+        self.left_paddle_action = PaddleAction(
+            player_identifier=self.registered_player_by_paddle_type[PaddleType.LEFT].player_id,
+            paddle_directive=PaddleDirective.STATIONARY)
+
+        self.right_paddle_action = PaddleAction(
+            player_identifier=self.registered_player_by_paddle_type[PaddleType.RIGHT].player_id,
+            paddle_directive=PaddleDirective.STATIONARY)
+
     def initialize_scoring(self):
         """
         Creates a scorekeeper and also initializes the font images for the scoring surface
@@ -321,15 +340,25 @@ class DefaultPongRenderer:
             self.arena.reset_starting_positions()
 
     def handle_paddle_actions(self):
-        pass
-        # left_paddle_action: PaddleAction = self.left_paddle_queue.get(timeout=ACTION_QUEUE_TIMEOUT)
-        # right_paddle_action: PaddleAction = self.right_paddle_queue.get(timeout=ACTION_QUEUE_TIMEOUT)
-        # left_paddle, right_paddle = self.arena.paddles
-        # if left_paddle_action:
-        #     left_paddle.velocity = get_paddle_velocity(left_paddle_action.paddle_directive)
-        #
-        # if right_paddle_action:
-        #     right_paddle.velocity = get_paddle_velocity(right_paddle_action.paddle_directive)
+        # get actions from the queue
+        updated_left_paddle_action: PaddleAction = self.left_paddle_queue.get(timeout=ACTION_QUEUE_TIMEOUT)
+        updated_right_paddle_action: PaddleAction = self.right_paddle_queue.get(timeout=ACTION_QUEUE_TIMEOUT)
+
+        # assign the paddle action to the working action if not None, otherwise working action remains unchanged
+        if updated_left_paddle_action: self.left_paddle_action = updated_left_paddle_action
+        if updated_right_paddle_action: self.right_paddle_action = updated_right_paddle_action
+
+        # update the velocities on the paddle actors in the arena bases on the paddle action
+        left_paddle, right_paddle = self.arena.paddles
+        left_paddle.velocity = get_paddle_velocity(self.left_paddle_action.paddle_directive)
+        right_paddle.velocity = get_paddle_velocity(self.right_paddle_action.paddle_directive)
+
+    def send_game_state(self):
+        builder = GameStateBuilder()
+        for actor in self.arena.actors: builder.add_game_actor(actor)
+        builder.add_state_iteration(self.frame_index)
+        self.game_state_queue.put(builder.build())
+
 
     def start_game(self):
         with game_lock:
@@ -342,10 +371,12 @@ class DefaultPongRenderer:
                 return
             self.game_started = True
 
+        self.initialize_paddle_actions()
         self.initialize_scoring()
         self.render_commencement()
         self.fps_clock = pygame.time.Clock()
         pygame.display.update(self.update_panes())
+        self.send_game_state()
 
         while True:
             for event in pygame.event.get():
@@ -353,7 +384,10 @@ class DefaultPongRenderer:
                     pygame.quit()
                     sys.exit()
 
+            self.handle_paddle_actions()
             self.game_engine.update_state(self.arena.actors)
             pygame.display.update(self.update_panes())
             self.update_score()
+            self.frame_index += 1
+            self.send_game_state()
             self.fps_clock.tick(FPS_CAP)
