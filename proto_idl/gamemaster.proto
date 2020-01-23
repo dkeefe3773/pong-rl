@@ -22,18 +22,43 @@ message PlayerIdentifier
     PaddleType paddle_type = 3;
 }
 
+enum ActorType
+{
+    LEFT_PADDLE = 0;
+    RIGHT_PADDLE = 1;
+    PRIMARY_BALL = 3;
+}
+
+message Coord
+{
+    uint32 x = 1;
+    uint32 y = 2;
+}
+
+message Actor
+{
+    ActorType actor_type = 1;
+    repeated Coord coords = 2;
+}
+
 message GameState
 {
     google.protobuf.Timestamp state_time = 1;
     uint64 state_iteration = 2;
+    repeated Actor actors = 3;
+}
 
-    // this should only be set when a player has won the game.
-    PlayerIdentifier winning_player = 3;
+enum PaddleDirective
+{
+    UP = 0;
+    DOWN = 1;
+    STATIONARY=2;
 }
 
 message PaddleAction
 {
     PlayerIdentifier player_identifier = 1;
+    PaddleDirective paddle_directive = 2;
 }
 
 // This service will provide the game state to clients as well as accept paddle input commands

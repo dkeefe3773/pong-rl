@@ -1,6 +1,7 @@
 # to get rid of alsa sound errors: see https://raspberrypi.stackexchange.com/questions/83254/pygame-and-alsa-lib-error
 import os
 import sys
+from queue import Queue
 
 from pygame.time import Clock
 from shapely.geometry import Polygon
@@ -19,10 +20,12 @@ from pygame import font
 
 from config import logging_configurator
 from config.property_configurator import game_render_config
+from config.property_configurator import game_engine_config
+from config.property_configurator import server_client_communication_config
 from gameengine.arena import Arena
 from gameengine.collision_engine import GameCollisionEngine
-from gamerender.scorecards import StandardScoreCard, ScoreKeeper
-from proto_gen.gamemaster_pb2 import PlayerIdentifier, PaddleType
+from gamerender.scorecards import ScoreKeeper
+from proto_gen.gamemaster_pb2 import PlayerIdentifier, PaddleType, PaddleAction, PaddleDirective
 
 logger = logging_configurator.get_logger(__name__)
 color_config = game_render_config.color_config
@@ -46,7 +49,14 @@ GamePane = namedtuple("GamePane", ['surface', 'pos'])
 # player_id is expected to be PlayerIdentifer object and scorecard a StandardScoreCard
 RegisteredPlayer = namedtuple("RegisteredPlayer", ['player_id'])
 
+# game is capped at this fps
 FPS_CAP = game_render_config.fps_cap
+
+# the blocking timeout for the queue
+ACTION_QUEUE_TIMEOUT = server_client_communication_config.action_queue_timeout
+
+# the speed of the paddle in the y direction
+DEFAULT_PADDLE_SPEED = game_engine_config.default_paddle_speed
 
 
 def color_from_ball(actor: Ball) -> Tuple[int, int, int]:
@@ -74,11 +84,36 @@ def color_from_actor(actor: Actor) -> Tuple[int, int, int]:
         color = color_config.obstacle_color
     return color
 
+paddle_directive_to_velocity = {
+    PaddleDirective.UP : (0,DEFAULT_PADDLE_SPEED),
+    PaddleDirective.DOWN : (0, -DEFAULT_PADDLE_SPEED),
+    PaddleDirective.STATIONARY: (0, 0)
+    }
+
+def get_paddle_velocity(paddle_directive: PaddleDirective) -> Tuple[int,int]:
+    """
+    :param paddle_directive:  a directive for paddle direction
+    :return:  the velocity as 2-tuple
+    """
+    return paddle_directive_to_velocity.get(paddle_directive, (0,0))
+
 
 class DefaultPongRenderer:
-    def __init__(self, arena: Arena, game_engine: GameCollisionEngine):
+    def __init__(self, arena: Arena, game_engine: GameCollisionEngine, left_paddle_queue: Queue,
+                 right_paddle_queue: Queue, game_state_queue: Queue):
+        """
+
+        :param arena:                This contains all the actors
+        :param game_engine:          Provices the collision physics
+        :param left_paddle_queue:    Thread safe queue for incoming left paddle actions
+        :param right_paddle_queue:   Thread safe queue for incoming right paddle actions
+        :param game_state_queue:     Thread safe queue for incoming outrgoing game state
+        """
         self.arena = arena
         self.game_engine = game_engine
+        self.left_paddle_queue = left_paddle_queue
+        self.right_paddle_queue = right_paddle_queue
+        self.game_state_queue = game_state_queue
 
         self.scoreboard_font_info = game_render_config.score_board_font
         self.registration_font_info = game_render_config.registration_font
@@ -267,19 +302,34 @@ class DefaultPongRenderer:
             winning_player = self.registered_player_by_paddle_type[PaddleType.RIGHT].player_id
             losing_player = self.registered_player_by_paddle_type[PaddleType.LEFT].player_id
             self.scorekeeper.tally_point(winning_player, losing_player)
-            self.cached_score_fonts_by_paddle_type[PaddleType.RIGHT].update(self.scorekeeper.get_scorecard(winning_player))
-            self.cached_score_fonts_by_paddle_type[PaddleType.LEFT].update(self.scorekeeper.get_scorecard(losing_player))
+            self.cached_score_fonts_by_paddle_type[PaddleType.RIGHT].update(
+                self.scorekeeper.get_scorecard(winning_player))
+            self.cached_score_fonts_by_paddle_type[PaddleType.LEFT].update(
+                self.scorekeeper.get_scorecard(losing_player))
             winner_discovered = True
         elif primary_ball_centroid[0] > right_back_line_centroid[0]:
             winning_player = self.registered_player_by_paddle_type[PaddleType.LEFT].player_id
             losing_player = self.registered_player_by_paddle_type[PaddleType.RIGHT].player_id
             self.scorekeeper.tally_point(winning_player, losing_player)
-            self.cached_score_fonts_by_paddle_type[PaddleType.LEFT].update(self.scorekeeper.get_scorecard(winning_player))
-            self.cached_score_fonts_by_paddle_type[PaddleType.RIGHT].update(self.scorekeeper.get_scorecard(losing_player))
+            self.cached_score_fonts_by_paddle_type[PaddleType.LEFT].update(
+                self.scorekeeper.get_scorecard(winning_player))
+            self.cached_score_fonts_by_paddle_type[PaddleType.RIGHT].update(
+                self.scorekeeper.get_scorecard(losing_player))
             winner_discovered = True
 
         if winner_discovered:
             self.arena.reset_starting_positions()
+
+    def handle_paddle_actions(self):
+        pass
+        # left_paddle_action: PaddleAction = self.left_paddle_queue.get(timeout=ACTION_QUEUE_TIMEOUT)
+        # right_paddle_action: PaddleAction = self.right_paddle_queue.get(timeout=ACTION_QUEUE_TIMEOUT)
+        # left_paddle, right_paddle = self.arena.paddles
+        # if left_paddle_action:
+        #     left_paddle.velocity = get_paddle_velocity(left_paddle_action.paddle_directive)
+        #
+        # if right_paddle_action:
+        #     right_paddle.velocity = get_paddle_velocity(right_paddle_action.paddle_directive)
 
     def start_game(self):
         with game_lock:

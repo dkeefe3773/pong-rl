@@ -1,6 +1,6 @@
 import itertools
 from abc import ABC, abstractmethod
-from typing import List
+from typing import List, Callable
 
 import numpy
 from shapely import affinity
@@ -9,7 +9,7 @@ from shapely.geometry.base import BaseGeometry
 from shapely.geometry import box
 
 from config import property_configurator
-from gameengine.gameactors import Actor, Ball, Paddle
+from gameengine.gameactors import Actor, Ball, Paddle, Wall
 
 """
  Between every rendered frame, an object will move from its current position to the position defined by the 
@@ -50,27 +50,24 @@ class NoOpPairCollision(ActorPairCollidor):
     def update_pair_state(self, actor1: Actor, actor2: Actor):
         pass
 
-
 class CollisionPairHandlerFactory:
     def __init__(self, ball_to_ball_handler: ActorPairCollidor,
                  ball_to_barrier_handler: ActorPairCollidor,
-                 ball_to_paddle_handler: ActorPairCollidor):
-        self.ball_to_ball_handler = ball_to_ball_handler
-        self.ball_to_barrier_handler = ball_to_barrier_handler
-        self.ball_to_paddle_handler = ball_to_paddle_handler
+                 ball_to_paddle_handler: ActorPairCollidor,
+                 paddle_to_wall_handler: ActorPairCollidor):
 
-    def get_collision_handler(self, actor1: Ball, actor2: Actor) -> ActorPairCollidor:
-        if not isinstance(actor1, Ball):
-            return NoOpPairCollision()
+        self.actor_pair_type_to_handler = {
+            (Ball, Ball): ball_to_ball_handler.update_pair_state,
+            (Ball, Wall): ball_to_barrier_handler.update_pair_state,
+            (Wall, Ball): lambda wall, ball: ball_to_barrier_handler.update_pair_state(ball, wall),
+            (Ball, Paddle): ball_to_paddle_handler.update_pair_state,
+            (Paddle, Ball): lambda paddle, ball: ball_to_paddle_handler.update_pair_state(ball, paddle),
+            (Paddle, Wall): paddle_to_wall_handler.update_pair_state,
+            (Wall, Paddle): lambda wall, paddle: paddle_to_wall_handler.update_pair_state(paddle, wall)
+            }
 
-        if isinstance(actor2, Ball):
-            handler = self.ball_to_ball_handler
-        elif isinstance(actor2, Paddle):
-            handler = self.ball_to_paddle_handler
-        else:
-            handler = self.ball_to_barrier_handler
-        return handler
-
+    def get_collision_handler(self, actor1: Ball, actor2: Actor) -> Callable:
+        return self.actor_pair_type_to_handler.get((actor1.__class__, actor2.__class__), lambda *args: None)
 
 class GameCollisionEngine(ABC):
     @abstractmethod
@@ -108,5 +105,5 @@ class DefaultGameCollisionEngine(GameCollisionEngine):
             for frame_index in range(PHYSICS_FRAME_RATE):
                 for collision_pair in itertools.chain(ball_to_other_pairs, ball_to_ball_pairs):
                     collision_handler = self.collision_pair_handler_factory.get_collision_handler(*collision_pair)
-                    collision_handler.update_pair_state(*collision_pair)
+                    collision_handler(*collision_pair)
                 for actor in actors: actor.move_forward(1.0 / PHYSICS_FRAME_RATE)

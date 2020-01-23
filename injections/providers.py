@@ -1,3 +1,5 @@
+from queue import Queue
+
 import dependency_injector.containers as containers
 import dependency_injector.providers as providers
 
@@ -7,6 +9,7 @@ from gameengine.ball_to_ball_collision import BilliardBallCollider
 from gameengine.ball_to_barrier_collision import IncidentAngleRebounder
 from gameengine.ball_to_paddle_collision import BallPaddleCollider, CollisionStrategyByFlavor, update_primary_ball
 from gameengine.collision_engine import CollisionPairHandlerFactory, DefaultGameCollisionEngine
+from gameengine.paddle_to_wall_collision import PaddleWallCollider
 from gamerender.pongrenders import DefaultPongRenderer
 from gameserver.pong_server import PongServer
 from gameserver.pong_servicer import DummyPongServicer
@@ -63,14 +66,24 @@ class GameEngineProviders(containers.DeclarativeContainer):
     ball_paddle_collision = providers.Singleton(BallPaddleCollider,
                                                 classic_paddle_collision_factory=collision_strategy_by_flavor)
 
+    paddle_wall_collision = providers.Singleton(PaddleWallCollider)
+
     collision_pair_handler_factory = providers.Singleton(CollisionPairHandlerFactory,
                                                          ball_to_ball_handler=ball_ball_collision,
                                                          ball_to_barrier_handler=ball_barrier_collision,
-                                                         ball_to_paddle_handler=ball_paddle_collision)
+                                                         ball_to_paddle_handler=ball_paddle_collision,
+                                                         paddle_to_wall_handler=paddle_wall_collision)
 
     game_engine = providers.Singleton(DefaultGameCollisionEngine,
                                       collision_pair_handler_factory=collision_pair_handler_factory)
 
+class ThreadCommunicationProviders(containers.DeclarativeContainer):
+    """
+    Container for thread safe communication objects
+    """
+    game_state_queue = providers.Singleton(Queue)
+    left_paddle_action_queue = providers.Singleton(Queue)
+    right_paddle_action_queue = providers.Singleton(Queue)
 
 class GameRendererProviders(containers.DeclarativeContainer):
     """
@@ -78,7 +91,10 @@ class GameRendererProviders(containers.DeclarativeContainer):
     """
     pong_renderer = providers.Factory(DefaultPongRenderer,
                                       arena=GameArenaProvider.default_arena,
-                                      game_engine=GameEngineProviders.game_engine)
+                                      game_engine=GameEngineProviders.game_engine,
+                                      left_paddle_queue = ThreadCommunicationProviders.left_paddle_action_queue,
+                                      right_paddle_queue = ThreadCommunicationProviders.right_paddle_action_queue,
+                                      game_state_queue = ThreadCommunicationProviders.game_state_queue)
 
 
 class ServicerProviders(containers.DeclarativeContainer):

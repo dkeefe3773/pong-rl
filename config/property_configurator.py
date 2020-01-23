@@ -140,6 +140,13 @@ class GameEngineConfig(Config):
         """
         return max(Config.get_property_int('game_engine', 'min_paddle_speed'), self.min_speed)
 
+    @property
+    def default_paddle_speed(self) -> int:
+        """
+        :return:  The standard speed of the paddle
+        """
+        return Config.get_property_int('game_engine', 'default_paddle_speed')
+
 
 class ClassicPongCollisionConfig(Config):
     @property
@@ -228,6 +235,11 @@ class MatchPlayConfig(Config):
     def points_per_match(self) -> int:
         return Config.get_property_int('match_play', 'points_in_match')
 
+class ServerClientCommunicationConfig(Config):
+    @property
+    def action_queue_timeout(self) -> float:
+        return Config.get_property_float('server_client_communication', 'paddle_action_queue_blocking_timeout')
+
 game_server_config = GameServerConfig()
 player_config = PlayerConfig()
 game_engine_config = GameEngineConfig()
@@ -235,3 +247,4 @@ ball_paddle_collision_config = ClassicPongCollisionConfig()
 game_arena_config = GameArenaConfig()
 game_render_config = GameRendererConfig()
 match_play_config = MatchPlayConfig()
+server_client_communication_config = ServerClientCommunicationConfig()
