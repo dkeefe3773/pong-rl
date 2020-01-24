@@ -230,15 +230,18 @@ class GameRendererConfig(Config):
     def fps_cap(self) -> int:
         return Config.get_property_int('game_renderer', 'fps_cap')
 
+
 class MatchPlayConfig(Config):
     @property
     def points_per_match(self) -> int:
         return Config.get_property_int('match_play', 'points_in_match')
 
+
 class ServerClientCommunicationConfig(Config):
     @property
     def action_queue_timeout(self) -> float:
         return Config.get_property_float('server_client_communication', 'paddle_action_queue_blocking_timeout')
+
 
 game_server_config = GameServerConfig()
 player_config = PlayerConfig()

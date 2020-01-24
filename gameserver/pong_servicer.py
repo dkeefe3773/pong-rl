@@ -32,9 +32,8 @@ class DefaultPongServicer(gamemaster_pb2_grpc.GameMasterServicer):
         else:
             game_state_queue = self.right_game_state_queue
 
-
         while True:
-            game_state = game_state_queue.get() # this will block indefinitely
+            game_state = game_state_queue.get()  # this will block indefinitely
             logger.debug(
                 "Serving game state to [{}:{}]".format(request.player_name, request.paddle_strategy_name))
             yield game_state
@@ -48,7 +47,7 @@ class DefaultPongServicer(gamemaster_pb2_grpc.GameMasterServicer):
 
         if self.registered_player_count == 2:
             logger.info("Starting Pong Game on a different thread")
-            game_thread = threading.Thread(target = self.pong_renderer.start_game, name = "game_thread")
+            game_thread = threading.Thread(target=self.pong_renderer.start_game, name="game_thread")
             game_thread.start()
         return Empty()
 
@@ -56,13 +55,14 @@ class DefaultPongServicer(gamemaster_pb2_grpc.GameMasterServicer):
         for paddle_action in request_iterator:
             player_identifier = paddle_action.player_identifier
             logger.debug("Received paddle action from [{}:{}]".format(player_identifier.player_name,
-                                                                     player_identifier.paddle_strategy_name))
+                                                                      player_identifier.paddle_strategy_name))
 
             if player_identifier.paddle_type is PaddleType.LEFT:
                 self.left_paddle_queue.put(paddle_action)
             elif player_identifier.paddle_type is PaddleType.RIGHT:
                 self.right_paddle_queue.put(paddle_action)
         return Empty()
+
 
 class DummyPongServicer(gamemaster_pb2_grpc.GameMasterServicer):
     """

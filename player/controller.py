@@ -1,5 +1,4 @@
 import threading
-from datetime import datetime, timezone
 from queue import Queue
 
 from config import logging_configurator

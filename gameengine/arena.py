@@ -73,7 +73,7 @@ class Arena:
         for paddle in filter(lambda actor: isinstance(actor, Paddle), self.actors):
             offset_to_center = paddle.centroid - self.arena_center
             paddle.translate(0, -offset_to_center[1])
-            paddle.velocity = (0,0)
+            paddle.velocity = (0, 0)
 
         for ball in filter(lambda actor: isinstance(actor, Ball), self.actors):
             offset_to_center = ball.centroid - self.arena_center
@@ -102,6 +102,3 @@ class Arena:
         right_paddle = Paddle("right_paddle", right_paddle_poly, Velocity(0, 0), PaddleType.RIGHT)
         self.paddles = (left_paddle, right_paddle)
 
-    def find_collision_pairs(self):
-        all_entities = [self.top_bound, self.bottom_bound, self.center_net, self.paddles[0], self.paddles[1]]
-        all_entities.extend(self.actors)

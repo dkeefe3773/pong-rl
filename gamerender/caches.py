@@ -11,6 +11,7 @@ class CachedScoreFontImages:
     """
     This class is for storing fonts and their derived images for the game scoreboard.
     """
+
     def __init__(self):
         self.fontconfig = game_render_config.score_board_font
         self.font = pygame.font.SysFont(self.fontconfig.name,

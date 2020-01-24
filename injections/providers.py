@@ -22,11 +22,11 @@ class PaddleProviders(containers.DeclarativeContainer):
     """
     Container for paddle controllers
     """
-    left_stationary_paddle = providers.Factory(StationaryPaddle, paddle_type = PaddleType.LEFT)
-    right_stationary_paddle = providers.Factory(StationaryPaddle, paddle_type = PaddleType.RIGHT)
+    left_stationary_paddle = providers.Factory(StationaryPaddle, paddle_type=PaddleType.LEFT)
+    right_stationary_paddle = providers.Factory(StationaryPaddle, paddle_type=PaddleType.RIGHT)
 
-    left_follow_the_ball_paddle = providers.Factory(FollowTheBallPaddle, paddle_type = PaddleType.LEFT)
-    right_follow_the_ball_paddle = providers.Factory(FollowTheBallPaddle, paddle_type = PaddleType.RIGHT)
+    left_follow_the_ball_paddle = providers.Factory(FollowTheBallPaddle, paddle_type=PaddleType.LEFT)
+    right_follow_the_ball_paddle = providers.Factory(FollowTheBallPaddle, paddle_type=PaddleType.RIGHT)
 
 
 class PlayerProviders(containers.DeclarativeContainer):
@@ -116,6 +116,7 @@ class ServicerProviders(containers.DeclarativeContainer):
                           left_game_state_queue=ThreadCommunicationProviders.left_game_state_queue,
                           right_game_state_queue=ThreadCommunicationProviders.right_game_state_queue,
                           pong_renderer=GameRendererProviders.pong_renderer)
+
 
 class GrpcServerProviders(containers.DeclarativeContainer):
     """

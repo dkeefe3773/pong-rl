@@ -1,14 +1,16 @@
+from config.property_configurator import match_play_config
 from proto_gen.gamemaster_pb2 import PlayerIdentifier
 
-from config.property_configurator import match_play_config
-
 POINTS_PER_MATCH = match_play_config.points_per_match
+
 
 def hashable_id(player: PlayerIdentifier) -> str:
     return ":".join([player.player_name, player.paddle_strategy_name])
 
+
 class StandardScoreCard:
-    def __init__(self, player_identifier: PlayerIdentifier, current_match_points_won: int = 0, total_points_won: int = 0,
+    def __init__(self, player_identifier: PlayerIdentifier, current_match_points_won: int = 0,
+                 total_points_won: int = 0,
                  matches_won: int = 0):
         """
 
@@ -56,6 +58,7 @@ class StandardScoreCard:
         """
         self._current_match_points_won = 0
 
+
 class ScoreKeeper:
     def __init__(self, player1: PlayerIdentifier, player2: PlayerIdentifier):
         """
@@ -63,8 +66,8 @@ class ScoreKeeper:
         :param player1:   first player
         :param player2:   second player
         """
-        self.player_to_scorecard = {hashable_id(player1) : StandardScoreCard(player1),
-                                    hashable_id(player2) : StandardScoreCard(player2)}
+        self.player_to_scorecard = {hashable_id(player1): StandardScoreCard(player1),
+                                    hashable_id(player2): StandardScoreCard(player2)}
 
     def tally_point(self, winning_player: PlayerIdentifier, losing_player: PlayerIdentifier):
         """
@@ -84,7 +87,3 @@ class ScoreKeeper:
         :return:  the current scorecard of the player
         """
         return self.player_to_scorecard[hashable_id(player)]
-
-
-
-

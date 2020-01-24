@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-from typing import Optional, List
 from gameengine.gameactors import Actor, Ball, BallFlavor, Wall, Paddle
-from proto_gen.gamemaster_pb2 import GameState, Coord, ActorType, PaddleType
 from proto_gen.gamemaster_pb2 import Actor as ProtoActor
+from proto_gen.gamemaster_pb2 import GameState, Coord, ActorType, PaddleType
 
 
 def get_proto_actor_type(game_actor: Actor):
@@ -25,10 +24,8 @@ class GameStateBuilder:
 
     def add_game_actor(self, game_actor: Actor) -> GameStateBuilder:
         proto_actor = ProtoActor()
-        try:
-            proto_coords = [Coord(x=int(poly_coord[0]), y=int(poly_coord[1])) for poly_coord in list(game_actor.shape.exterior.coords)]
-        except:
-            pass
+        proto_coords = [Coord(x=int(poly_coord[0]), y=int(poly_coord[1])) for poly_coord in
+                        list(game_actor.shape.exterior.coords)]
         proto_actor.coords.extend(proto_coords)
         proto_actor.actor_type = get_proto_actor_type(game_actor)
         self._game_state.actors.append(proto_actor)
@@ -39,5 +36,3 @@ class GameStateBuilder:
 
     def build(self) -> GameState:
         return self._game_state
-
-

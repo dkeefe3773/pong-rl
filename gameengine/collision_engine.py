@@ -2,10 +2,6 @@ import itertools
 from abc import ABC, abstractmethod
 from typing import List, Callable
 
-import numpy
-from shapely import affinity
-from shapely.geometry import LineString
-from shapely.geometry.base import BaseGeometry
 from shapely.geometry import box
 
 from config import property_configurator
@@ -45,12 +41,12 @@ class ActorPairCollidor(ABC):
     def update_pair_state(self, actor1: Actor, actor2: Actor):
         pass
 
+
 class CollisionPairHandlerFactory:
     def __init__(self, ball_to_ball_handler: ActorPairCollidor,
                  ball_to_barrier_handler: ActorPairCollidor,
                  ball_to_paddle_handler: ActorPairCollidor,
                  paddle_to_wall_handler: ActorPairCollidor):
-
         self.actor_pair_type_to_handler = {
             (Ball, Ball): ball_to_ball_handler.update_pair_state,
             (Ball, Wall): ball_to_barrier_handler.update_pair_state,
@@ -63,6 +59,7 @@ class CollisionPairHandlerFactory:
 
     def get_collision_handler(self, actor1: Ball, actor2: Actor) -> Callable:
         return self.actor_pair_type_to_handler.get((actor1.__class__, actor2.__class__), lambda *args: None)
+
 
 class GameCollisionEngine(ABC):
     @abstractmethod
