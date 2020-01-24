@@ -8,7 +8,8 @@ from gameengine.arena import Arena
 from gameengine.ball_to_ball_collision import BilliardBallCollider
 from gameengine.ball_to_barrier_collision import IncidentAngleRebounder
 from gameengine.ball_to_paddle_collision import BallPaddleCollider, CollisionStrategyByFlavor, update_primary_ball
-from gameengine.collision_engine import CollisionPairHandlerFactory, DefaultGameCollisionEngine
+from gameengine.collision_engine import CollisionPairHandlerFactory, AccurateGameCollisionEngine, \
+    FastGameCollisionEngine
 from gameengine.paddle_to_wall_collision import PaddleWallCollider
 from gamerender.pongrenders import DefaultPongRenderer
 from gameserver.pong_server import PongServer
@@ -79,8 +80,11 @@ class GameEngineProviders(containers.DeclarativeContainer):
                                                          ball_to_paddle_handler=ball_paddle_collision,
                                                          paddle_to_wall_handler=paddle_wall_collision)
 
-    game_engine = providers.Singleton(DefaultGameCollisionEngine,
-                                      collision_pair_handler_factory=collision_pair_handler_factory)
+    accurate_game_engine = providers.Singleton(AccurateGameCollisionEngine,
+                                               collision_pair_handler_factory=collision_pair_handler_factory)
+
+    fast_game_engine = providers.Singleton(FastGameCollisionEngine,
+                                           collision_pair_handler_factory=collision_pair_handler_factory)
 
 
 class ThreadCommunicationProviders(containers.DeclarativeContainer):
@@ -99,7 +103,7 @@ class GameRendererProviders(containers.DeclarativeContainer):
     """
     pong_renderer = providers.Factory(DefaultPongRenderer,
                                       arena=GameArenaProvider.default_arena,
-                                      game_engine=GameEngineProviders.game_engine,
+                                      game_engine=GameEngineProviders.fast_game_engine,
                                       left_paddle_queue=ThreadCommunicationProviders.left_paddle_action_queue,
                                       right_paddle_queue=ThreadCommunicationProviders.right_paddle_action_queue,
                                       left_game_state_queue=ThreadCommunicationProviders.left_game_state_queue,
