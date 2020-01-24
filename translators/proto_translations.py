@@ -25,7 +25,10 @@ class GameStateBuilder:
 
     def add_game_actor(self, game_actor: Actor) -> GameStateBuilder:
         proto_actor = ProtoActor()
-        proto_coords = [Coord(*poly_coord) for poly_coord in list(game_actor.shape.exterior.coords)]
+        try:
+            proto_coords = [Coord(x=int(poly_coord[0]), y=int(poly_coord[1])) for poly_coord in list(game_actor.shape.exterior.coords)]
+        except:
+            pass
         proto_actor.coords.extend(proto_coords)
         proto_actor.actor_type = get_proto_actor_type(game_actor)
         self._game_state.actors.append(proto_actor)

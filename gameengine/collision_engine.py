@@ -90,15 +90,10 @@ class DefaultGameCollisionEngine(GameCollisionEngine):
         if not any_possible_collision:
             for actor in actors: actor.move_forward()
         else:
-            balls, non_balls = [], []
-            for actor in actors:
-                (balls if isinstance(actor, Ball) else non_balls).append(actor)
-
-            ball_to_other_pairs = itertools.product(balls, non_balls)
-            ball_to_ball_pairs = itertools.combinations(balls, 2)
+            actor_pairs = itertools.combinations(actors, 2)
 
             for frame_index in range(PHYSICS_FRAME_RATE):
-                for collision_pair in itertools.chain(ball_to_other_pairs, ball_to_ball_pairs):
+                for collision_pair in actor_pairs:
                     collision_handler = self.collision_pair_handler_factory.get_collision_handler(*collision_pair)
                     collision_handler(*collision_pair)
                 for actor in actors: actor.move_forward(1.0 / PHYSICS_FRAME_RATE)

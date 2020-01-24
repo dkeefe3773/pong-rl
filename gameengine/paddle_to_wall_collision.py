@@ -21,7 +21,7 @@ def update_paddle(paddle: Paddle, wall: Wall):
     paddle_backup_distance = 1. / paddle.vnorm
     while actors_intersect:
         paddle.move_backward(paddle_backup_distance)
-        actors_intersect = paddle.shape.intersects(paddle.shape)
+        actors_intersect = paddle.shape.intersects(wall.shape)
 
     # now set the paddle velocity to zero
     paddle.velocity = (0,0)

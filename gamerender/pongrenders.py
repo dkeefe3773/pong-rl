@@ -87,8 +87,8 @@ def color_from_actor(actor: Actor) -> Tuple[int, int, int]:
 
 
 paddle_directive_to_velocity = {
-    PaddleDirective.UP: (0, DEFAULT_PADDLE_SPEED),
-    PaddleDirective.DOWN: (0, -DEFAULT_PADDLE_SPEED),
+    PaddleDirective.UP: (0, -DEFAULT_PADDLE_SPEED),
+    PaddleDirective.DOWN: (0, DEFAULT_PADDLE_SPEED),
     PaddleDirective.STATIONARY: (0, 0)
     }
 
@@ -102,21 +102,24 @@ def get_paddle_velocity(paddle_directive: PaddleDirective) -> Tuple[int, int]:
 
 
 class DefaultPongRenderer:
-    def __init__(self, arena: Arena, game_engine: GameCollisionEngine, left_paddle_queue: Queue,
-                 right_paddle_queue: Queue, game_state_queue: Queue):
+    def __init__(self, arena: Arena, game_engine: GameCollisionEngine,
+                 left_paddle_queue: Queue, right_paddle_queue: Queue,
+                 left_game_state_queue: Queue, right_game_state_queue):
         """
 
         :param arena:                This contains all the actors
         :param game_engine:          Provices the collision physics
         :param left_paddle_queue:    Thread safe queue for incoming left paddle actions
         :param right_paddle_queue:   Thread safe queue for incoming right paddle actions
-        :param game_state_queue:     Thread safe queue for incoming outrgoing game state
+        :param left_game_state_queue:     Thread safe queue for outgoing game state to left paddle player
+        :param right_game_state_queue:     Thread safe queue for outgoing game state to right paddle player
         """
         self.arena = arena
         self.game_engine = game_engine
         self.left_paddle_queue = left_paddle_queue
         self.right_paddle_queue = right_paddle_queue
-        self.game_state_queue = game_state_queue
+        self.left_game_state_queue = left_game_state_queue
+        self.right_game_state_queue = right_game_state_queue
 
         self.scoreboard_font_info = game_render_config.score_board_font
         self.registration_font_info = game_render_config.registration_font
@@ -181,20 +184,24 @@ class DefaultPongRenderer:
         self.left_paddle_action: Optional[PaddleAction] = None
         self.right_paddle_action: Optional[PaddleAction] = None
 
-    def register_player(self, player: PlayerIdentifier):
+    def register_player(self, player: PlayerIdentifier) -> bool:
+        """
+        :param player:  a player identifier
+        :return: True if player successfully registered otherwise false
+        """
         with registration_lock:
             if self.game_started:
                 logger.warn("Game has already started.  Not taking new registrations")
-                return
+                return False
 
             if self.registration_closed:
                 logger.warn("Maximum number of players already registered")
-                return
+                return False
 
             if player.paddle_type in self.registered_player_by_paddle_type:
                 logger.warn(
                     f"Cannot register player {player.player_name}-{player.paddle_strategy_name} because {player.paddle_type} already registered")
-                return
+                return False
 
             self.registered_player_by_paddle_type[player.paddle_type] = RegisteredPlayer(player)
             self.cached_score_fonts_by_paddle_type[player.paddle_type] = CachedScoreFontImages()
@@ -208,6 +215,7 @@ class DefaultPongRenderer:
                 self.canvas.blit(registration_image, font_pos)
             self.registration_closed = len(self.registered_player_by_paddle_type) == 2
             pygame.display.update()
+            return True
 
     def render_commencement(self):
         blit_rectangle = None
@@ -364,8 +372,9 @@ class DefaultPongRenderer:
         builder = GameStateBuilder()
         for actor in self.arena.actors: builder.add_game_actor(actor)
         builder.add_state_iteration(self.frame_index)
-        self.game_state_queue.put(builder.build())
-
+        game_state = builder.build()
+        self.left_game_state_queue.put(game_state)
+        self.right_game_state_queue.put(game_state)
 
     def start_game(self):
         with game_lock:
@@ -378,11 +387,14 @@ class DefaultPongRenderer:
                 return
             self.game_started = True
 
+        logger.info("GAME COMMENCING")
         self.initialize_paddle_actions()
         self.initialize_scoring()
         self.render_commencement()
         self.fps_clock = pygame.time.Clock()
         pygame.display.update(self.update_panes())
+
+        logger.debug("Sending first game state")
         self.send_game_state()
 
         while True:
@@ -391,7 +403,10 @@ class DefaultPongRenderer:
                     pygame.quit()
                     sys.exit()
 
+            logger.debug("Getting paddle actions")
             self.handle_paddle_actions()
+
+            logger.debug("Updating game state")
             self.game_engine.update_state(self.arena.actors)
             pygame.display.update(self.update_panes())
             self.update_score()

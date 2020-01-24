@@ -12,9 +12,8 @@ from gameengine.collision_engine import CollisionPairHandlerFactory, DefaultGame
 from gameengine.paddle_to_wall_collision import PaddleWallCollider
 from gamerender.pongrenders import DefaultPongRenderer
 from gameserver.pong_server import PongServer
-from gameserver.pong_servicer import DummyPongServicer
-from paddles.do_nothing import DoNothingPaddle
-from paddles.stationary import StationaryPaddle
+from gameserver.pong_servicer import DummyPongServicer, DefaultPongServicer
+from paddles.paddle import StationaryPaddle, FollowTheBallPaddle
 from player.controller import PlayerController
 from proto_gen.gamemaster_pb2 import PaddleType
 
@@ -23,11 +22,11 @@ class PaddleProviders(containers.DeclarativeContainer):
     """
     Container for paddle controllers
     """
-    left_do_nothing_paddle = providers.Factory(DoNothingPaddle)
-    right_do_nothing_paddle = providers.Factory(DoNothingPaddle)
+    left_stationary_paddle = providers.Factory(StationaryPaddle, paddle_type = PaddleType.LEFT)
+    right_stationary_paddle = providers.Factory(StationaryPaddle, paddle_type = PaddleType.RIGHT)
 
-    left_stationary_paddle = providers.Factory(StationaryPaddle)
-    right_stationary_paddle = providers.Factory(StationaryPaddle)
+    left_follow_the_ball_paddle = providers.Factory(FollowTheBallPaddle, paddle_type = PaddleType.LEFT)
+    right_follow_the_ball_paddle = providers.Factory(FollowTheBallPaddle, paddle_type = PaddleType.RIGHT)
 
 
 class PlayerProviders(containers.DeclarativeContainer):
@@ -37,12 +36,12 @@ class PlayerProviders(containers.DeclarativeContainer):
     left_player = providers.Singleton(PlayerController,
                                       name=property_configurator.player_config.left_player_name,
                                       paddle_type=PaddleType.LEFT,
-                                      paddle_controller=PaddleProviders.left_stationary_paddle)
+                                      paddle_controller=PaddleProviders.left_follow_the_ball_paddle)
 
     right_player = providers.Singleton(PlayerController,
                                        name=property_configurator.player_config.right_player_name,
                                        paddle_type=PaddleType.RIGHT,
-                                       paddle_controller=PaddleProviders.right_stationary_paddle)
+                                       paddle_controller=PaddleProviders.right_follow_the_ball_paddle)
 
 
 class GameArenaProvider(containers.DeclarativeContainer):
@@ -77,13 +76,16 @@ class GameEngineProviders(containers.DeclarativeContainer):
     game_engine = providers.Singleton(DefaultGameCollisionEngine,
                                       collision_pair_handler_factory=collision_pair_handler_factory)
 
+
 class ThreadCommunicationProviders(containers.DeclarativeContainer):
     """
     Container for thread safe communication objects
     """
-    game_state_queue = providers.Singleton(Queue)
+    left_game_state_queue = providers.Singleton(Queue)
+    right_game_state_queue = providers.Singleton(Queue)
     left_paddle_action_queue = providers.Singleton(Queue)
     right_paddle_action_queue = providers.Singleton(Queue)
+
 
 class GameRendererProviders(containers.DeclarativeContainer):
     """
@@ -92,24 +94,35 @@ class GameRendererProviders(containers.DeclarativeContainer):
     pong_renderer = providers.Factory(DefaultPongRenderer,
                                       arena=GameArenaProvider.default_arena,
                                       game_engine=GameEngineProviders.game_engine,
-                                      left_paddle_queue = ThreadCommunicationProviders.left_paddle_action_queue,
-                                      right_paddle_queue = ThreadCommunicationProviders.right_paddle_action_queue,
-                                      game_state_queue = ThreadCommunicationProviders.game_state_queue)
+                                      left_paddle_queue=ThreadCommunicationProviders.left_paddle_action_queue,
+                                      right_paddle_queue=ThreadCommunicationProviders.right_paddle_action_queue,
+                                      left_game_state_queue=ThreadCommunicationProviders.left_game_state_queue,
+                                      right_game_state_queue=ThreadCommunicationProviders.right_game_state_queue,
+                                      )
 
 
 class ServicerProviders(containers.DeclarativeContainer):
     """
     Container for service providers
     """
+    # For testing
     dummy_pong_servicer = providers.Factory(DummyPongServicer)
 
+    # the real deal
+    default_pong_servicer = \
+        providers.Factory(DefaultPongServicer,
+                          left_paddle_queue=ThreadCommunicationProviders.left_paddle_action_queue,
+                          right_paddle_queue=ThreadCommunicationProviders.right_paddle_action_queue,
+                          left_game_state_queue=ThreadCommunicationProviders.left_game_state_queue,
+                          right_game_state_queue=ThreadCommunicationProviders.right_game_state_queue,
+                          pong_renderer=GameRendererProviders.pong_renderer)
 
 class GrpcServerProviders(containers.DeclarativeContainer):
     """
     Container for server providers
     """
     pong_server = providers.Singleton(PongServer,
-                                      servicer=ServicerProviders.dummy_pong_servicer,
+                                      servicer=ServicerProviders.default_pong_servicer,
                                       max_workers=property_configurator.game_server_config.max_workers,
                                       thread_prefix=property_configurator.game_server_config.thread_pool_prefix,
                                       port=property_configurator.game_server_config.port)
