@@ -50,11 +50,21 @@ message ImageFrame
     uint32 num_cols = 3;
 }
 
+message ScoreCard
+{
+    PlayerIdentifier player = 1;
+    uint32 current_game_points = 2;
+    uint32 total_match_points = 3;
+    uint32 total_points = 4;
+}
+
 message GameState
 {
     uint64 state_iteration = 2;
     repeated Actor actors = 3;
     ImageFrame arena_frame = 4;
+    ScoreCard left_scorecard = 5;
+    ScoreCard right_scorecard = 6;
 }
 
 enum PaddleDirective

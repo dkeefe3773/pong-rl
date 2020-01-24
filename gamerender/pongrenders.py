@@ -373,6 +373,7 @@ class DefaultPongRenderer:
         for actor in self.arena.actors: builder.add_game_actor(actor)
         builder.add_state_iteration(self.frame_index)
         builder.add_arena_surface(self.arena_pane.surface)
+        builder.add_scorekeeper(self.scorekeeper)
         game_state = builder.build()
         self.left_game_state_queue.put(game_state)
         self.right_game_state_queue.put(game_state)

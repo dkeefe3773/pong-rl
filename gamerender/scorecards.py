@@ -1,3 +1,5 @@
+from typing import List
+
 from config.property_configurator import match_play_config
 from proto_gen.gamemaster_pb2 import PlayerIdentifier
 
@@ -10,19 +12,19 @@ def hashable_id(player: PlayerIdentifier) -> str:
 
 class StandardScoreCard:
     def __init__(self, player_identifier: PlayerIdentifier, current_match_points_won: int = 0,
-                 total_points_won: int = 0,
-                 matches_won: int = 0):
+                 total_points_won: int = 0, matches_won: int = 0, points_drawn: int = 0):
         """
-
         :param player_identifier:            identifier object for the player that this score card represents
         :param current_match_points_won:     the number of points in the current match
         :param total_points_won:             the total number of points won across all matches
         :param matches_won:                  the total number of matches won
+        :param points_drawn:                 the total number of points aborted
         """
         self.player_identifier = player_identifier
         self._current_match_points_won = current_match_points_won
         self._total_points_won = total_points_won
         self._matches_won = matches_won
+        self._points_drawn = points_drawn
 
     @property
     def match_score(self) -> int:
@@ -35,6 +37,13 @@ class StandardScoreCard:
     @property
     def total_matches(self) -> int:
         return self._matches_won
+
+    @property
+    def points_drawn(self) -> int:
+        return self._points_drawn
+
+    def add_drawn_point(self):
+        self._points_drawn += 1
 
     def add_match_point(self) -> bool:
         """
@@ -53,7 +62,7 @@ class StandardScoreCard:
 
     def match_over(self):
         """
-        Call into this if the oppenent has one a match
+        Call into this if the oppenent has won a match
         :return:  None
         """
         self._current_match_points_won = 0
@@ -68,6 +77,10 @@ class ScoreKeeper:
         """
         self.player_to_scorecard = {hashable_id(player1): StandardScoreCard(player1),
                                     hashable_id(player2): StandardScoreCard(player2)}
+
+    def tally_aborted_point(self):
+        for scorecard in self.player_to_scorecard.values():
+            scorecard.add_drawn_point()
 
     def tally_point(self, winning_player: PlayerIdentifier, losing_player: PlayerIdentifier):
         """
@@ -87,3 +100,7 @@ class ScoreKeeper:
         :return:  the current scorecard of the player
         """
         return self.player_to_scorecard[hashable_id(player)]
+
+    def get_scorecards(self) -> List[StandardScoreCard]:
+        return list(self.player_to_scorecard.values())
+
