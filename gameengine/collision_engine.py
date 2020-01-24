@@ -2,10 +2,6 @@ import itertools
 from abc import ABC, abstractmethod
 from typing import List, Callable
 
-import numpy
-from shapely import affinity
-from shapely.geometry import LineString
-from shapely.geometry.base import BaseGeometry
 from shapely.geometry import box
 
 from config import property_configurator
@@ -45,12 +41,12 @@ class ActorPairCollidor(ABC):
     def update_pair_state(self, actor1: Actor, actor2: Actor):
         pass
 
+
 class CollisionPairHandlerFactory:
     def __init__(self, ball_to_ball_handler: ActorPairCollidor,
                  ball_to_barrier_handler: ActorPairCollidor,
                  ball_to_paddle_handler: ActorPairCollidor,
                  paddle_to_wall_handler: ActorPairCollidor):
-
         self.actor_pair_type_to_handler = {
             (Ball, Ball): ball_to_ball_handler.update_pair_state,
             (Ball, Wall): ball_to_barrier_handler.update_pair_state,
@@ -63,6 +59,7 @@ class CollisionPairHandlerFactory:
 
     def get_collision_handler(self, actor1: Ball, actor2: Actor) -> Callable:
         return self.actor_pair_type_to_handler.get((actor1.__class__, actor2.__class__), lambda *args: None)
+
 
 class GameCollisionEngine(ABC):
     @abstractmethod
@@ -77,28 +74,59 @@ class GameCollisionEngine(ABC):
         pass
 
 
-class DefaultGameCollisionEngine(GameCollisionEngine):
+class AccurateGameCollisionEngine(GameCollisionEngine):
+    """
+    Provides an engine that covers for edge cases at the expense of frame rate.
+    """
+
     def __init__(self, collision_pair_handler_factory: CollisionPairHandlerFactory):
         self.collision_pair_handler_factory = collision_pair_handler_factory
 
     def update_state(self, actors: List[Actor]):
         # first lets see if there are any potential collisions
         possible_collision_pairs = itertools.combinations(actors, 2)
-        any_possible_collision = any(
-            map(lambda pair: calculate_potential_collision(pair[0], pair[1]), possible_collision_pairs))
-
-        if not any_possible_collision:
+        likely_collision_pairs = list(filter(lambda pair: calculate_potential_collision(pair[0], pair[1]),
+                                             possible_collision_pairs))
+        if not likely_collision_pairs:
             for actor in actors: actor.move_forward()
         else:
-            balls, non_balls = [], []
-            for actor in actors:
-                (balls if isinstance(actor, Ball) else non_balls).append(actor)
+            collision_actor_set = set([actor for pair in likely_collision_pairs for actor in pair])
+            actor_set = set(actors)
+            non_collision_actors = actor_set.difference(collision_actor_set)
+            for non_collision_actor in non_collision_actors: non_collision_actor.move_forward()
 
-            ball_to_other_pairs = itertools.product(balls, non_balls)
-            ball_to_ball_pairs = itertools.combinations(balls, 2)
-
-            for frame_index in range(PHYSICS_FRAME_RATE):
-                for collision_pair in itertools.chain(ball_to_other_pairs, ball_to_ball_pairs):
+            for collision_pair in likely_collision_pairs:
+                physics_rate = int(max(collision_pair[0].vnorm, collision_pair[1].vnorm))
+                for physics_frame in range(physics_rate):
                     collision_handler = self.collision_pair_handler_factory.get_collision_handler(*collision_pair)
                     collision_handler(*collision_pair)
-                for actor in actors: actor.move_forward(1.0 / PHYSICS_FRAME_RATE)
+                    for collision_actor in collision_pair: collision_actor.move_forward(1.0 / physics_rate)
+
+
+class FastGameCollisionEngine(GameCollisionEngine):
+    """
+    Provides a good enough engine in most cases.  If an object's velocity norm is greater than the width of
+    an obstacle, the object will probably pass through.  Most arena configurations won't have this problem though.
+    This is about 20-30 frames per second faster than AccurateGameCollisionEngine
+    """
+
+    def __init__(self, collision_pair_handler_factory: CollisionPairHandlerFactory):
+        self.collision_pair_handler_factory = collision_pair_handler_factory
+
+    def update_state(self, actors: List[Actor]):
+        # first lets see if there are any potential collisions
+        possible_collision_pairs = itertools.combinations(actors, 2)
+        likely_collision_pairs = list(filter(lambda pair: calculate_potential_collision(pair[0], pair[1]),
+                                             possible_collision_pairs))
+        if not likely_collision_pairs:
+            for actor in actors: actor.move_forward()
+        else:
+            collision_actor_set = set([actor for pair in likely_collision_pairs for actor in pair])
+            actor_set = set(actors)
+            non_collision_actors = actor_set.difference(collision_actor_set)
+            for non_collision_actor in non_collision_actors: non_collision_actor.move_forward()
+
+            for collision_pair in likely_collision_pairs:
+                collision_handler = self.collision_pair_handler_factory.get_collision_handler(*collision_pair)
+                collision_handler(*collision_pair)
+            for collision_actor in collision_actor_set: collision_actor.move_forward(1.0)

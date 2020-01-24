@@ -11,6 +11,7 @@ class CachedScoreFontImages:
     """
     This class is for storing fonts and their derived images for the game scoreboard.
     """
+
     def __init__(self):
         self.fontconfig = game_render_config.score_board_font
         self.font = pygame.font.SysFont(self.fontconfig.name,
@@ -21,17 +22,19 @@ class CachedScoreFontImages:
         self._paddle_strategy_name: Optional[str] = None
         self._match_points: Optional[int] = None
         self._total_points: Optional[int] = None
+        self._points_drawn: Optional[int] = None
         self._matches_won: Optional[int] = None
         self.name_image: Optional[pygame.Surface] = None
         self.paddle_stategy_image: Optional[pygame.Surface] = None
         self.match_points_image: Optional[pygame.Surface] = None
         self.total_points_image: Optional[pygame.Surface] = None
         self.matches_won_image: Optional[pygame.Surface] = None
+        self.points_drawn_image: Optional[pygame.Surface] = None
         self.fps_clock: Optional[Clock] = None
 
     def ordered_images(self) -> List[pygame.Surface]:
         return [self.name_image, self.paddle_stategy_image, self.match_points_image, self.total_points_image,
-                self.matches_won_image]
+                self.matches_won_image, self.points_drawn_image]
 
     @property
     def is_updated(self):
@@ -82,6 +85,17 @@ class CachedScoreFontImages:
             self._image_updated = True
 
     @property
+    def points_drawn(self) -> int:
+        return self._points_drawn
+
+    @points_drawn.setter
+    def points_drawn(self, points: int):
+        if points != self._points_drawn:
+            self._points_drawn = points
+            self._update_points_drawn_image()
+            self._image_updated = True
+
+    @property
     def matches_won(self) -> int:
         return self._matches_won
 
@@ -99,6 +113,7 @@ class CachedScoreFontImages:
         self.match_points = scorecard.match_score
         self.total_points = scorecard.total_points
         self.matches_won = scorecard.total_matches
+        self.points_drawn = scorecard.points_drawn
 
     def _update_name_image(self):
         self.name_image = self.font.render(f"Player Name: {self.player_name}", True, self.fontconfig.color)
@@ -112,6 +127,9 @@ class CachedScoreFontImages:
 
     def _update_total_points_image(self):
         self.total_points_image = self.font.render(f"Total Points: {self.total_points}", True, self.fontconfig.color)
+
+    def _update_points_drawn_image(self):
+        self.points_drawn_image = self.font.render(f"Points Drawn: {self.points_drawn}", True, self.fontconfig.color)
 
     def _update_matches_won_image(self):
         self.matches_won_image = self.font.render(f"Match Count: {self.matches_won}", True, self.fontconfig.color)

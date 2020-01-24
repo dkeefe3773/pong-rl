@@ -1,7 +1,6 @@
 import math
 from typing import Callable
 
-import numpy
 import shapely
 from dependency_injector.providers import DelegatedCallable
 from shapely import ops
@@ -9,7 +8,6 @@ from shapely import ops
 from config import logging_configurator, property_configurator
 from gameengine.collision_engine import ActorPairCollidor
 from gameengine.gameactors import Ball, Paddle, BallFlavor
-from utils.measures import ureg
 
 logger = logging_configurator.get_logger(__name__)
 MAX_ANGLE = property_configurator.ball_paddle_collision_config.max_angle_quantity
@@ -20,18 +18,18 @@ def update_primary_ball(ball: Ball, paddle: Paddle):
     if not actors_intersect:
         return
 
-    logger.info(f"Begin classic pong paddle ball collision modeling for {ball.flavor} and {paddle.name}")
+    logger.debug(f"Begin classic pong paddle ball collision modeling for {ball.flavor} and {paddle.name}")
     # lets make ball back up so it is not intersecting anymore.  We will try to back up one pixel at a time
     ball_backup_distance = 1. / ball.vnorm
     while actors_intersect:
-        logger.info("Moving ball backwards one pixel at a time")
+        logger.debug("Moving ball backwards one pixel at a time")
         ball.move_backward(ball_backup_distance)
         actors_intersect = ball.shape.intersects(paddle.shape)
-    logger.info("Ball no longer intsersects paddle")
+    logger.debug("Ball no longer intsersects paddle")
 
     nearest_ball_point, nearest_poly_point = shapely.ops.nearest_points(ball.shape, paddle.shape)
     paddle_hit_x, paddle_hit_y = list(nearest_poly_point.coords)[0]
-    logger.info(f"Ball hit paddle at {paddle_hit_y}")
+    logger.debug(f"Ball hit paddle at {paddle_hit_y}")
 
     paddle_min_x, paddle_min_y, paddle_max_x, paddle_max_y = paddle.shape.bounds
     paddle_half_lenth = (paddle_max_y - paddle_min_y) / 2.0

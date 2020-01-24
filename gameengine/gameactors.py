@@ -1,3 +1,4 @@
+import uuid
 from abc import ABC, abstractmethod
 from collections import namedtuple
 from enum import Enum
@@ -10,9 +11,12 @@ from shapely.geometry.base import BaseGeometry
 
 from config import logging_configurator
 from config.property_configurator import game_engine_config
+from proto_gen.gamemaster_pb2 import PaddleType
+
 logger = logging_configurator.get_logger(__name__)
 
 Velocity = namedtuple('Velocity', ['vel_x', 'vel_y'])
+
 
 class Actor(ABC):
     def __init__(self, name: str, shape: BaseGeometry, velocity: Velocity, collision_enabled: bool,
@@ -23,6 +27,15 @@ class Actor(ABC):
         self._vnorm = numpy.linalg.norm(self._velocity)
         self._collision_enabled = collision_enabled
         self._rebound_enabled = rebound_enabled
+        self._uuid = str(uuid.uuid4())
+
+    def __hash__(self):
+        return hash(self._uuid)
+
+    def __eq__(self, other):
+        if isinstance(other, Actor):
+            return self._uuid == other._uuid
+        return NotImplemented
 
     @property
     @abstractmethod
@@ -151,7 +164,7 @@ class StationaryActor(Actor, ABC):
         return super().velocity
 
     @velocity.setter
-    def velocity(self, updated_velocity: Tuple[int,int]):
+    def velocity(self, updated_velocity: Tuple[int, int]):
         pass
 
     def move_forward(self, relative_distance=1):
@@ -162,7 +175,8 @@ class StationaryActor(Actor, ABC):
 
     @property
     def speed_bound(self) -> Tuple[int, int]:
-        return (0,0)
+        return (0, 0)
+
 
 class Wall(StationaryActor):
     def __init__(self, name: str, polygon: Polygon, collision_enabled: bool = True):
@@ -173,13 +187,16 @@ class Net(StationaryActor):
     def __init__(self, name: str, polygon: Polygon):
         super().__init__(name, polygon, collision_enabled=False, rebound_enabled=False)
 
+
 class BackLine(StationaryActor):
     def __init__(self, name: str, polygon: Polygon):
         super().__init__(name, polygon, collision_enabled=False, rebound_enabled=False)
 
+
 class Paddle(Actor):
-    def __init__(self, name: str, polygon: Polygon, velocity: Velocity):
+    def __init__(self, name: str, polygon: Polygon, velocity: Velocity, paddle_type: PaddleType):
         super().__init__(name, polygon, velocity, collision_enabled=True, rebound_enabled=False)
+        self.paddle_type = paddle_type
         self._max_paddle_speed = game_engine_config.max_paddle_speed
         self._min_paddle_speed = game_engine_config.min_paddle_speed
         if numpy.linalg.norm(self.velocity) > 0:
@@ -188,6 +205,7 @@ class Paddle(Actor):
     @property
     def speed_bound(self) -> Tuple[int, int]:
         return (self._min_paddle_speed, self._max_paddle_speed)
+
 
 class BallFlavor(Enum):
     PRIMARY = 1
@@ -214,10 +232,3 @@ class Ball(Actor):
     @property
     def speed_bound(self) -> Tuple[int, int]:
         return self._min_ball_speed, self._max_ball_speed
-
-
-
-
-
-
-

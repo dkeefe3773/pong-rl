@@ -12,7 +12,7 @@ from gameengine.gameactors import Actor, Ball
 logger = logging_configurator.get_logger(__name__)
 
 to_euclidean_transform = numpy.array([[1, 0], [0, -1]])  # transforms canvas coordinates to euclidean standard
-to_canvas_transform = numpy.linalg.inv(to_euclidean_transform) # transforms standard coordinates to canvas
+to_canvas_transform = numpy.linalg.inv(to_euclidean_transform)  # transforms standard coordinates to canvas
 
 
 def line_segment_rebound(ball: Ball, line_segment: LineString):
@@ -82,4 +82,3 @@ class IncidentAngleRebounder(ActorPairCollidor):
         logger.debug(f"Ball velocity before line segment rebound {ball.velocity}")
         ball.velocity = line_segment_rebound(ball, closest_line_segment)
         logger.debug(f"Ball velocity after line segment rebound {ball.velocity}")
-

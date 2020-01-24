@@ -1,13 +1,14 @@
 # to get rid of alsa sound errors: see https://raspberrypi.stackexchange.com/questions/83254/pygame-and-alsa-lib-error
 import os
 import sys
-from queue import Queue
+from queue import Queue, Empty
 
 from pygame.time import Clock
 from shapely.geometry import Polygon
 
 from gameengine.gameactors import Actor, Paddle, Ball, Net, BallFlavor, BackLine
 from gamerender.caches import CachedScoreFontImages
+from translators.proto_translations import GameStateBuilder
 
 os.environ['SDL_AUDIODRIVER'] = 'dsp'
 
@@ -84,36 +85,41 @@ def color_from_actor(actor: Actor) -> Tuple[int, int, int]:
         color = color_config.obstacle_color
     return color
 
+
 paddle_directive_to_velocity = {
-    PaddleDirective.UP : (0,DEFAULT_PADDLE_SPEED),
-    PaddleDirective.DOWN : (0, -DEFAULT_PADDLE_SPEED),
+    PaddleDirective.UP: (0, -DEFAULT_PADDLE_SPEED),
+    PaddleDirective.DOWN: (0, DEFAULT_PADDLE_SPEED),
     PaddleDirective.STATIONARY: (0, 0)
     }
 
-def get_paddle_velocity(paddle_directive: PaddleDirective) -> Tuple[int,int]:
+
+def get_paddle_velocity(paddle_directive: PaddleDirective) -> Tuple[int, int]:
     """
     :param paddle_directive:  a directive for paddle direction
     :return:  the velocity as 2-tuple
     """
-    return paddle_directive_to_velocity.get(paddle_directive, (0,0))
+    return paddle_directive_to_velocity.get(paddle_directive, (0, 0))
 
 
 class DefaultPongRenderer:
-    def __init__(self, arena: Arena, game_engine: GameCollisionEngine, left_paddle_queue: Queue,
-                 right_paddle_queue: Queue, game_state_queue: Queue):
+    def __init__(self, arena: Arena, game_engine: GameCollisionEngine,
+                 left_paddle_queue: Queue, right_paddle_queue: Queue,
+                 left_game_state_queue: Queue, right_game_state_queue):
         """
 
         :param arena:                This contains all the actors
         :param game_engine:          Provices the collision physics
         :param left_paddle_queue:    Thread safe queue for incoming left paddle actions
         :param right_paddle_queue:   Thread safe queue for incoming right paddle actions
-        :param game_state_queue:     Thread safe queue for incoming outrgoing game state
+        :param left_game_state_queue:     Thread safe queue for outgoing game state to left paddle player
+        :param right_game_state_queue:     Thread safe queue for outgoing game state to right paddle player
         """
         self.arena = arena
         self.game_engine = game_engine
         self.left_paddle_queue = left_paddle_queue
         self.right_paddle_queue = right_paddle_queue
-        self.game_state_queue = game_state_queue
+        self.left_game_state_queue = left_game_state_queue
+        self.right_game_state_queue = right_game_state_queue
 
         self.scoreboard_font_info = game_render_config.score_board_font
         self.registration_font_info = game_render_config.registration_font
@@ -141,7 +147,7 @@ class DefaultPongRenderer:
         # Areana surface + buffer
         self.canvas_width = self.arena.arena_width
         self.canvas_height = SCORE_BOARD_HEIGHT + SEPARATOR + META_DATA_HEIGHT + SEPARATOR + self.arena.arena_height + SEPARATOR
-        self.canvas = pygame.display.set_mode([self.canvas_width, self.canvas_height])
+        self.canvas = pygame.display.set_mode([self.canvas_width, self.canvas_height], depth = 32)
 
         # create the scoreboard surface, meta-data surface, and arena surface and record their positions on the canvas
         score_y_pos = 0
@@ -171,20 +177,31 @@ class DefaultPongRenderer:
         # tracks our scoring
         self.scorekeeper: Optional[ScoreKeeper] = None
 
-    def register_player(self, player: PlayerIdentifier):
+        # the frame
+        self.frame_index: int = 0
+
+        # initial paddle actions
+        self.left_paddle_action: Optional[PaddleAction] = None
+        self.right_paddle_action: Optional[PaddleAction] = None
+
+    def register_player(self, player: PlayerIdentifier) -> bool:
+        """
+        :param player:  a player identifier
+        :return: True if player successfully registered otherwise false
+        """
         with registration_lock:
             if self.game_started:
                 logger.warn("Game has already started.  Not taking new registrations")
-                return
+                return False
 
             if self.registration_closed:
                 logger.warn("Maximum number of players already registered")
-                return
+                return False
 
             if player.paddle_type in self.registered_player_by_paddle_type:
                 logger.warn(
                     f"Cannot register player {player.player_name}-{player.paddle_strategy_name} because {player.paddle_type} already registered")
-                return
+                return False
 
             self.registered_player_by_paddle_type[player.paddle_type] = RegisteredPlayer(player)
             self.cached_score_fonts_by_paddle_type[player.paddle_type] = CachedScoreFontImages()
@@ -198,6 +215,7 @@ class DefaultPongRenderer:
                 self.canvas.blit(registration_image, font_pos)
             self.registration_closed = len(self.registered_player_by_paddle_type) == 2
             pygame.display.update()
+            return True
 
     def render_commencement(self):
         blit_rectangle = None
@@ -281,6 +299,15 @@ class DefaultPongRenderer:
             pygame.draw.polygon(surface, color, coords)
         return [self.canvas.blit(surface, self.arena_pane.pos)]
 
+    def initialize_paddle_actions(self):
+        self.left_paddle_action = PaddleAction(
+            player_identifier=self.registered_player_by_paddle_type[PaddleType.LEFT].player_id,
+            paddle_directive=PaddleDirective.STATIONARY)
+
+        self.right_paddle_action = PaddleAction(
+            player_identifier=self.registered_player_by_paddle_type[PaddleType.RIGHT].player_id,
+            paddle_directive=PaddleDirective.STATIONARY)
+
     def initialize_scoring(self):
         """
         Creates a scorekeeper and also initializes the font images for the scoring surface
@@ -321,15 +348,35 @@ class DefaultPongRenderer:
             self.arena.reset_starting_positions()
 
     def handle_paddle_actions(self):
-        pass
-        # left_paddle_action: PaddleAction = self.left_paddle_queue.get(timeout=ACTION_QUEUE_TIMEOUT)
-        # right_paddle_action: PaddleAction = self.right_paddle_queue.get(timeout=ACTION_QUEUE_TIMEOUT)
-        # left_paddle, right_paddle = self.arena.paddles
-        # if left_paddle_action:
-        #     left_paddle.velocity = get_paddle_velocity(left_paddle_action.paddle_directive)
-        #
-        # if right_paddle_action:
-        #     right_paddle.velocity = get_paddle_velocity(right_paddle_action.paddle_directive)
+        # get actions from the queue.  Oddly have to use exception as case where nothing in queue
+        try:
+            updated_left_paddle_action: PaddleAction = self.left_paddle_queue.get(timeout=ACTION_QUEUE_TIMEOUT)
+        except Empty:
+            updated_left_paddle_action = None
+
+        try:
+            updated_right_paddle_action: PaddleAction = self.right_paddle_queue.get(timeout=ACTION_QUEUE_TIMEOUT)
+        except Empty:
+            updated_right_paddle_action = None
+
+        # assign the paddle action to the working action if not None, otherwise working action remains unchanged
+        if updated_left_paddle_action: self.left_paddle_action = updated_left_paddle_action
+        if updated_right_paddle_action: self.right_paddle_action = updated_right_paddle_action
+
+        # update the velocities on the paddle actors in the arena bases on the paddle action
+        left_paddle, right_paddle = self.arena.paddles
+        left_paddle.velocity = get_paddle_velocity(self.left_paddle_action.paddle_directive)
+        right_paddle.velocity = get_paddle_velocity(self.right_paddle_action.paddle_directive)
+
+    def send_game_state(self):
+        builder = GameStateBuilder()
+        for actor in self.arena.actors: builder.add_game_actor(actor)
+        builder.add_state_iteration(self.frame_index)
+        builder.add_arena_surface(self.arena_pane.surface)
+        builder.add_scorekeeper(self.scorekeeper)
+        game_state = builder.build()
+        self.left_game_state_queue.put(game_state)
+        self.right_game_state_queue.put(game_state)
 
     def start_game(self):
         with game_lock:
@@ -342,10 +389,15 @@ class DefaultPongRenderer:
                 return
             self.game_started = True
 
+        logger.info("GAME COMMENCING")
+        self.initialize_paddle_actions()
         self.initialize_scoring()
         self.render_commencement()
         self.fps_clock = pygame.time.Clock()
         pygame.display.update(self.update_panes())
+
+        logger.debug("Sending first game state")
+        self.send_game_state()
 
         while True:
             for event in pygame.event.get():
@@ -353,7 +405,13 @@ class DefaultPongRenderer:
                     pygame.quit()
                     sys.exit()
 
+            logger.debug("Getting paddle actions")
+            self.handle_paddle_actions()
+
+            logger.debug("Updating game state")
             self.game_engine.update_state(self.arena.actors)
             pygame.display.update(self.update_panes())
             self.update_score()
+            self.frame_index += 1
+            self.send_game_state()
             self.fps_clock.tick(FPS_CAP)

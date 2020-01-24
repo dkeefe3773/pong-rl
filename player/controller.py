@@ -1,5 +1,4 @@
 import threading
-from datetime import datetime, timezone
 from queue import Queue
 
 from config import logging_configurator
@@ -21,10 +20,10 @@ def paddle_action_provider():
         except:
             pass
         if paddle_action is not None:
-            logger.info("Yielding paddle action")
+            logger.debug("Yielding paddle action")
             yield paddle_action
         else:
-            logger.info("No paddle action generated during timeout period")
+            logger.warn("No paddle action generated during timeout period")
     logger.info("Paddle actions are no longer being served")
 
 
@@ -50,14 +49,8 @@ class PlayerController:
 
     def _process_game_state(self):
         for game_state in serverstub.serve_game_states(self.player_identifier):
-            utc_time: datetime = game_state.state_time.ToDatetime()
-            local_time = utc_time.replace(tzinfo=timezone.utc).astimezone(tz=None)
-            logger.info("Received game state {} from server at time {}".format(game_state.state_iteration, local_time))
-            if not game_state.HasField("winning_player"):
-                paddle_action = self.paddle_controller.process_game_state(game_state)
-                if paddle_action is not None:
-                    paddle_action.player_identifier.CopyFrom(self.player_identifier)
-                    paddle_action_queue.put(paddle_action)
-            else:
-                logger.info("Winner!  Game Over")
-                _stop_providing_actions.set()
+            logger.debug("Received game state {} from server ".format(game_state.state_iteration))
+            paddle_action = self.paddle_controller.process_game_state(game_state)
+            if paddle_action is not None:
+                paddle_action.player_identifier.CopyFrom(self.player_identifier)
+                paddle_action_queue.put(paddle_action)

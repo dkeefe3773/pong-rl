@@ -6,15 +6,15 @@ from proto_gen.gamemaster_pb2 import PlayerIdentifier, PaddleType
 
 
 def test_game_render():
-    player_left_identifier = PlayerIdentifier(player_name = "LEFT_PLAYER",
-                                              paddle_strategy_name = "LEFT_STRATEGY",
-                                              paddle_type = PaddleType.LEFT)
+    player_left_identifier = PlayerIdentifier(player_name="LEFT_PLAYER",
+                                              paddle_strategy_name="LEFT_STRATEGY",
+                                              paddle_type=PaddleType.LEFT)
 
-    player_right_identifier = PlayerIdentifier(player_name = "RIGHT_PLAYER",
-                                              paddle_strategy_name = "RIGHT_STRATEGY",
-                                              paddle_type = PaddleType.RIGHT)
+    player_right_identifier = PlayerIdentifier(player_name="RIGHT_PLAYER",
+                                               paddle_strategy_name="RIGHT_STRATEGY",
+                                               paddle_type=PaddleType.RIGHT)
 
-    pong_renderer: DefaultPongRenderer  = providers.GameRendererProviders.pong_renderer()
+    pong_renderer: DefaultPongRenderer = providers.GameRendererProviders.pong_renderer()
 
     pong_renderer.register_player(player_left_identifier)
 
@@ -26,7 +26,6 @@ def test_game_render():
 
     pong_renderer.start_game()
 
+
 if __name__ == "__main__":
     test_game_render()
-
-
