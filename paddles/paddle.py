@@ -35,6 +35,22 @@ class StationaryPaddle(PaddleController):
         logger.debug(f"Processing game state {game_state.state_iteration}")
         return PaddleAction(paddle_directive=PaddleDirective.STATIONARY)
 
+class AlwaysUpPaddle(PaddleController):
+    def __init__(self, paddle_type: PaddleType):
+        super().__init__(paddle_type)
+
+    def process_game_state(self, game_state: GameState):
+        logger.debug(f"Processing game state {game_state.state_iteration}")
+        return PaddleAction(paddle_directive=PaddleDirective.UP)
+
+class AlwaysDownPaddle(PaddleController):
+    def __init__(self, paddle_type: PaddleType):
+        super().__init__(paddle_type)
+
+    def process_game_state(self, game_state: GameState):
+        logger.debug(f"Processing game state {game_state.state_iteration}")
+        return PaddleAction(paddle_directive=PaddleDirective.DOWN)
+
 
 class FollowTheBallPaddle(PaddleController):
     def __init__(self, paddle_type: PaddleType):

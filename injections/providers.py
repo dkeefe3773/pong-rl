@@ -13,7 +13,7 @@ from gameengine.paddle_to_wall_collision import PaddleWallCollider
 from gamerender.pongrenders import DefaultPongRenderer
 from gameserver.pong_server import PongServer
 from gameserver.pong_servicer import DummyPongServicer, DefaultPongServicer
-from paddles.paddle import StationaryPaddle, FollowTheBallPaddle
+from paddles.paddle import StationaryPaddle, FollowTheBallPaddle, AlwaysDownPaddle, AlwaysUpPaddle
 from player.controller import PlayerController
 from proto_gen.gamemaster_pb2 import PaddleType
 
@@ -27,6 +27,12 @@ class PaddleProviders(containers.DeclarativeContainer):
 
     left_follow_the_ball_paddle = providers.Factory(FollowTheBallPaddle, paddle_type=PaddleType.LEFT)
     right_follow_the_ball_paddle = providers.Factory(FollowTheBallPaddle, paddle_type=PaddleType.RIGHT)
+
+    left_always_down_paddle = providers.Factory(AlwaysDownPaddle, paddle_type=PaddleType.LEFT)
+    right_always_down_paddle = providers.Factory(AlwaysDownPaddle, paddle_type=PaddleType.RIGHT)
+
+    left_always_up_paddle = providers.Factory(AlwaysUpPaddle, paddle_type=PaddleType.LEFT)
+    right_always_up_paddle = providers.Factory(AlwaysUpPaddle, paddle_type=PaddleType.RIGHT)
 
 
 class PlayerProviders(containers.DeclarativeContainer):
