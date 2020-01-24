@@ -81,16 +81,26 @@ class DefaultGameCollisionEngine(GameCollisionEngine):
     def update_state(self, actors: List[Actor]):
         # first lets see if there are any potential collisions
         possible_collision_pairs = itertools.combinations(actors, 2)
-        any_possible_collision = any(
-            map(lambda pair: calculate_potential_collision(pair[0], pair[1]), possible_collision_pairs))
-
-        if not any_possible_collision:
+        likely_collision_pairs = list(filter(lambda pair: calculate_potential_collision(pair[0], pair[1]),
+                                             possible_collision_pairs))
+        if not likely_collision_pairs:
             for actor in actors: actor.move_forward()
         else:
-            actor_pairs = itertools.combinations(actors, 2)
+            collision_actor_set = set([actor for pair in likely_collision_pairs for actor in pair])
+            actor_set = set(actors)
+            non_collision_actors = actor_set.difference(collision_actor_set)
+            for non_collision_actor in non_collision_actors: non_collision_actor.move_forward()
 
-            for frame_index in range(PHYSICS_FRAME_RATE):
-                for collision_pair in actor_pairs:
+            for collision_pair in likely_collision_pairs:
+                physics_rate = int(max(collision_pair[0].vnorm, collision_pair[1].vnorm))
+                for physics_frame in range(physics_rate):
                     collision_handler = self.collision_pair_handler_factory.get_collision_handler(*collision_pair)
                     collision_handler(*collision_pair)
-                for actor in actors: actor.move_forward(1.0 / PHYSICS_FRAME_RATE)
+                    for collision_actor in collision_pair: collision_actor.move_forward(1.0 / physics_rate)
+
+
+            # for frame_index in range(PHYSICS_FRAME_RATE):
+            #     for collision_pair in likely_collision_pairs:
+            #         collision_handler = self.collision_pair_handler_factory.get_collision_handler(*collision_pair)
+            #         collision_handler(*collision_pair)
+            #     for collision_actor in collision_actor_set: collision_actor.move_forward(1.0 / PHYSICS_FRAME_RATE)

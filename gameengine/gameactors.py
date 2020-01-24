@@ -1,3 +1,4 @@
+import uuid
 from abc import ABC, abstractmethod
 from collections import namedtuple
 from enum import Enum
@@ -26,6 +27,15 @@ class Actor(ABC):
         self._vnorm = numpy.linalg.norm(self._velocity)
         self._collision_enabled = collision_enabled
         self._rebound_enabled = rebound_enabled
+        self._uuid = str(uuid.uuid4())
+
+    def __hash__(self):
+        return hash(self._uuid)
+
+    def __eq__(self, other):
+        if isinstance(other, Actor):
+            return self._uuid == other._uuid
+        return NotImplemented
 
     @property
     @abstractmethod
