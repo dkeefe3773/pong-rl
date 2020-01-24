@@ -43,10 +43,18 @@ message Actor
     repeated Coord coords = 2;
 }
 
+message ImageFrame
+{
+    bytes image = 1;
+    uint32 num_rows = 2;
+    uint32 num_cols = 3;
+}
+
 message GameState
 {
     uint64 state_iteration = 2;
     repeated Actor actors = 3;
+    ImageFrame arena_frame = 4;
 }
 
 enum PaddleDirective

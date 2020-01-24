@@ -1,6 +1,6 @@
 import random
 from abc import ABC, abstractmethod
-from typing import Optional
+from typing import Optional, Tuple
 
 from shapely.geometry import Polygon
 
