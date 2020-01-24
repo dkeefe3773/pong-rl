@@ -147,7 +147,7 @@ class DefaultPongRenderer:
         # Areana surface + buffer
         self.canvas_width = self.arena.arena_width
         self.canvas_height = SCORE_BOARD_HEIGHT + SEPARATOR + META_DATA_HEIGHT + SEPARATOR + self.arena.arena_height + SEPARATOR
-        self.canvas = pygame.display.set_mode([self.canvas_width, self.canvas_height], 32)
+        self.canvas = pygame.display.set_mode([self.canvas_width, self.canvas_height], depth = 32)
 
         # create the scoreboard surface, meta-data surface, and arena surface and record their positions on the canvas
         score_y_pos = 0
