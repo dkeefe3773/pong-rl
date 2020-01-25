@@ -5,7 +5,7 @@ from typing import Optional, Tuple
 from shapely.geometry import Polygon
 
 from config import logging_configurator
-from paddles.paddle_utils import image_frame_to_array
+from paddles.paddle_utils import image_frame_to_array, array_to_image
 from proto_gen.gamemaster_pb2 import GameState, PaddleAction, PaddleDirective, PaddleType, Actor, ActorType, \
     GameStateBuffer
 
@@ -108,6 +108,7 @@ class EnhancedFollowTheBallPaddle(PaddleController):
         my_paddle_shape = Polygon([(coord.x, coord.y) for coord in my_paddle.coords])
         if ball_moving_away:
             frame_array = image_frame_to_array(game_state.arena_frame)
+            array_to_image(frame_array)
             arena_height = frame_array.shape[0] // 2
 
             if my_paddle_shape.centroid.y > arena_height:
@@ -125,4 +126,5 @@ class EnhancedFollowTheBallPaddle(PaddleController):
             else:
                 # lets add some randomness here so that when the paddles play each other they don't get stuck in a loop
                 directive = random.choice([PaddleDirective.UP, PaddleDirective.DOWN])
+
         return PaddleAction(paddle_directive=directive)

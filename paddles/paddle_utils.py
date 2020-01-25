@@ -1,6 +1,7 @@
 from typing import Tuple
 
 import numpy
+from PIL import Image
 
 from proto_gen.gamemaster_pb2 import ImageFrame
 
@@ -25,3 +26,16 @@ def image_frame_to_array(image_frame: ImageFrame) -> numpy.ndarray:
     """
     flat_array: numpy.ndarray = numpy.frombuffer(image_frame.image, dtype=numpy.uint32)
     return numpy.reshape(flat_array, (image_frame.num_rows, image_frame.num_cols))
+
+def show_image_from_array(array: numpy.ndarray):
+    """
+    This will convert the array to an image and then show the image in a frame.  Nice as a sanity check
+    :param array:  a numpy array holding 32bit integer pixel values
+    :return:  None
+    """
+    image = Image.fromarray(array)
+    image.show()
+
+class GameStateWrapper():
+    
+
