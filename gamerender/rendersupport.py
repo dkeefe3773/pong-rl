@@ -1,15 +1,17 @@
 from __future__ import annotations
 
 from collections import namedtuple
+from enum import Enum
 from queue import Empty
 from threading import RLock
-from typing import TYPE_CHECKING, List, Tuple
+from typing import TYPE_CHECKING, List, Tuple, Optional
 
 import pygame
 from shapely.geometry import Polygon
 
 from config import logging_configurator
-from config.property_configurator import game_render_config, server_client_communication_config, game_engine_config
+from config.property_configurator import game_render_config, server_client_communication_config, game_engine_config, \
+    match_play_config
 from gameengine.gameactors import Ball, BallFlavor, Actor, Paddle, Net, BackLine
 from gamerender.caches import CachedScoreFontImages
 from proto_gen.gamemaster_pb2 import PaddleType, PaddleAction, PaddleDirective, PlayerIdentifier
@@ -199,8 +201,27 @@ class RegistrationManager:
             pygame.display.update()
             return True
 
+
+class Direction(Enum):
+    UNSET = 1
+    LEFT = 2
+    RIGHT = 3
+
+
 class ScoringManager:
+    def __init__(self):
+        self.change_of_direction_count: int = 0
+        self.last_ball_dirction: Optional[Direction] = Direction.UNSET
+
     def update_score(self, pong_renderer: DefaultPongRenderer):
+        current_ball_direction = Direction.RIGHT if pong_renderer.arena.primary_ball.velocity[0] > 0 else Direction.LEFT
+        if self.last_ball_dirction is Direction.UNSET:
+            self.last_ball_dirction = current_ball_direction
+
+        if self.last_ball_dirction is not current_ball_direction:
+            self.change_of_direction_count += 1
+            self.last_ball_dirction = current_ball_direction
+
         primary_ball_centroid = pong_renderer.arena.primary_ball.centroid
         left_back_line_centroid = pong_renderer.arena.left_back_line.centroid
         right_back_line_centroid = pong_renderer.arena.right_back_line.centroid
@@ -225,4 +246,15 @@ class ScoringManager:
             winner_discovered = True
 
         if winner_discovered:
+            self.change_of_direction_count = 0
+            self.last_ball_dirction = Direction.UNSET
             pong_renderer.arena.reset_starting_positions()
+
+        elif self.change_of_direction_count >= match_play_config.hits_for_draw:
+            self.change_of_direction_count = 0
+            self.last_ball_dirction = Direction.UNSET
+            pong_renderer.scorekeeper.tally_aborted_point()
+            for score_font_cache in pong_renderer.cached_score_fonts_by_paddle_type.values():
+                score_font_cache.points_drawn = score_font_cache.points_drawn + 1
+            pong_renderer.arena.reset_starting_positions()
+

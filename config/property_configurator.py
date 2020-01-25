@@ -249,6 +249,10 @@ class MatchPlayConfig(Config):
     def points_per_match(self) -> int:
         return Config.get_property_int('match_play', 'points_in_match')
 
+    @property
+    def hits_for_draw(self) -> int:
+        return Config.get_property_int('match_play', 'hits_for_draw')
+
 
 class ServerClientCommunicationConfig(Config):
     @property
