@@ -35,10 +35,10 @@ color_config = game_render_config.color_config
 # apparently, if performance is an issue, you just initialize the modules you need, but not a problem right now
 pygame.init()
 
-SCORE_BOARD_HEIGHT = 150
-META_DATA_HEIGHT = 50
-REGISTRATION_OFFSET_HORIZ = 10
-SEPARATOR = 5
+SCORE_BOARD_HEIGHT: int = 150
+META_DATA_HEIGHT: int = 30
+REGISTRATION_OFFSET_HORIZ: int = 10
+SEPARATOR: int = 5
 
 registration_lock = RLock()
 game_lock = RLock()
@@ -51,13 +51,13 @@ GamePane = namedtuple("GamePane", ['surface', 'pos'])
 RegisteredPlayer = namedtuple("RegisteredPlayer", ['player_id'])
 
 # game is capped at this fps
-FPS_CAP = game_render_config.fps_cap
+FPS_CAP: int = game_render_config.fps_cap
 
 # the blocking timeout for the queue
-ACTION_QUEUE_TIMEOUT = server_client_communication_config.action_queue_timeout
+ACTION_QUEUE_BLOCK: bool = server_client_communication_config.is_client_response_lock
 
 # the speed of the paddle in the y direction
-DEFAULT_PADDLE_SPEED = game_engine_config.default_paddle_speed
+DEFAULT_PADDLE_SPEED: int = game_engine_config.default_paddle_speed
 
 
 def color_from_ball(actor: Ball) -> Tuple[int, int, int]:
@@ -169,7 +169,7 @@ class DefaultPongRenderer:
         self.commencement_pos = (0, self.canvas_height // 2)
 
         # specify position of fps counter relative to meta surface
-        self.fps_pos = (self.canvas_width - 100, META_DATA_HEIGHT // 2)
+        self.fps_pos = (self.canvas_width - 100, META_DATA_HEIGHT // 2 - self.fps_font_info.size // 4)
 
         self.game_started: bool = False
         self.registration_closed: bool = False
@@ -350,12 +350,12 @@ class DefaultPongRenderer:
     def handle_paddle_actions(self):
         # get actions from the queue.  Oddly have to use exception as case where nothing in queue
         try:
-            updated_left_paddle_action: PaddleAction = self.left_paddle_queue.get(timeout=ACTION_QUEUE_TIMEOUT)
+            updated_left_paddle_action: PaddleAction = self.left_paddle_queue.get(block=ACTION_QUEUE_BLOCK)
         except Empty:
             updated_left_paddle_action = None
 
         try:
-            updated_right_paddle_action: PaddleAction = self.right_paddle_queue.get(timeout=ACTION_QUEUE_TIMEOUT)
+            updated_right_paddle_action: PaddleAction = self.right_paddle_queue.get(block=ACTION_QUEUE_BLOCK)
         except Empty:
             updated_right_paddle_action = None
 

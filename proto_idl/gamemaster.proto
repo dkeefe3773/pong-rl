@@ -41,6 +41,7 @@ message Actor
 {
     ActorType actor_type = 1;
     repeated Coord coords = 2;
+    Coord velocity = 3;
 }
 
 message ImageFrame
@@ -67,6 +68,11 @@ message GameState
     ScoreCard right_scorecard = 6;
 }
 
+message GameStateBuffer
+{
+    repeated GameState game_states = 1;
+}
+
 enum PaddleDirective
 {
     UP = 0;
@@ -84,7 +90,8 @@ message PaddleAction
 service GameMaster
 {
     // This is a hot stream of game state.  Stream will exhaust when a player loses a match.
-    rpc stream_game_state(PlayerIdentifier) returns (stream GameState) {}
+    //rpc stream_game_state(PlayerIdentifier) returns (stream GameState) {}
+    rpc stream_game_state(PlayerIdentifier) returns (stream GameStateBuffer) {}
 
     // Let the game engine know that a player has registered to play.
     rpc register_player(PlayerIdentifier) returns (google.protobuf.Empty) {}

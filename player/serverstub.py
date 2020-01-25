@@ -4,7 +4,7 @@ from typing import Generator
 import grpc
 
 from config import logging_configurator
-from proto_gen.gamemaster_pb2 import GameState, PlayerIdentifier, PaddleAction
+from proto_gen.gamemaster_pb2 import GameState, PlayerIdentifier, PaddleAction, GameStateBuffer
 
 logger = logging_configurator.get_logger(__name__)
 
@@ -44,15 +44,15 @@ def register_player(player_identifier: PlayerIdentifier):
                                                                               player_identifier.paddle_strategy_name));
 
 
-def serve_game_states(playerIdentifier: PlayerIdentifier) -> Generator[GameState, None, None]:
+def serve_game_states(playerIdentifier: PlayerIdentifier) -> Generator[GameStateBuffer, None, None]:
     """
     A generator for game state
     :return: an iterator over game states
     """
     with get_transactional_server_stub() as game_master_stub:
         game_state_iterator = game_master_stub.stream_game_state(playerIdentifier)
-        for game_state in game_state_iterator:
-            yield game_state
+        for game_state_buffer in game_state_iterator:
+            yield game_state_buffer
 
 
 def submit_paddle_action_iterator(paddle_action_iterator: Generator[PaddleAction, None, None]):

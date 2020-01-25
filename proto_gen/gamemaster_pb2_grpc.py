@@ -18,7 +18,7 @@ class GameMasterStub(object):
     self.stream_game_state = channel.unary_stream(
         '/GameMaster/stream_game_state',
         request_serializer=gamemaster__pb2.PlayerIdentifier.SerializeToString,
-        response_deserializer=gamemaster__pb2.GameState.FromString,
+        response_deserializer=gamemaster__pb2.GameStateBuffer.FromString,
         )
     self.register_player = channel.unary_unary(
         '/GameMaster/register_player',
@@ -38,6 +38,7 @@ class GameMasterServicer(object):
 
   def stream_game_state(self, request, context):
     """This is a hot stream of game state.  Stream will exhaust when a player loses a match.
+    rpc stream_game_state(PlayerIdentifier) returns (stream GameState) {}
     """
     context.set_code(grpc.StatusCode.UNIMPLEMENTED)
     context.set_details('Method not implemented!')
@@ -63,7 +64,7 @@ def add_GameMasterServicer_to_server(servicer, server):
       'stream_game_state': grpc.unary_stream_rpc_method_handler(
           servicer.stream_game_state,
           request_deserializer=gamemaster__pb2.PlayerIdentifier.FromString,
-          response_serializer=gamemaster__pb2.GameState.SerializeToString,
+          response_serializer=gamemaster__pb2.GameStateBuffer.SerializeToString,
       ),
       'register_player': grpc.unary_unary_rpc_method_handler(
           servicer.register_player,

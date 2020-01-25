@@ -48,9 +48,9 @@ class PlayerController:
         serverstub.submit_paddle_action_iterator(paddle_action_provider())
 
     def _process_game_state(self):
-        for game_state in serverstub.serve_game_states(self.player_identifier):
-            logger.debug("Received game state {} from server ".format(game_state.state_iteration))
-            paddle_action = self.paddle_controller.process_game_state(game_state)
+        for game_state_buffer in serverstub.serve_game_states(self.player_identifier):
+            logger.debug(f"Received game state buffer from server having {len(game_state_buffer.game_states)} frames")
+            paddle_action = self.paddle_controller.process_game_state(game_state_buffer)
             if paddle_action is not None:
                 paddle_action.player_identifier.CopyFrom(self.player_identifier)
                 paddle_action_queue.put(paddle_action)
