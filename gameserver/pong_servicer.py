@@ -9,7 +9,7 @@ from google.protobuf.timestamp_pb2 import Timestamp
 from config import logging_configurator
 from gamerender.pongrenders import DefaultPongRenderer
 from proto_gen import gamemaster_pb2_grpc
-from proto_gen.gamemaster_pb2 import GameState, PlayerIdentifier, PaddleType, PaddleAction
+from proto_gen.gamemaster_pb2 import GameState, PlayerIdentifier, PaddleType, PaddleAction, GameStateBuffer
 
 logger = logging_configurator.get_logger(__name__)
 
@@ -23,20 +23,29 @@ class DefaultPongServicer(gamemaster_pb2_grpc.GameMasterServicer):
         self.left_game_state_queue = left_game_state_queue
         self.right_game_state_queue = right_game_state_queue
         self.pong_renderer = pong_renderer
-
         self.registered_player_count = 0
 
-    def stream_game_state(self, request: PlayerIdentifier, context) -> Generator[GameState, None, None]:
+    def stream_game_state(self, request: PlayerIdentifier, context) -> Generator[GameStateBuffer, None, None]:
         if request.paddle_type is PaddleType.LEFT:
             game_state_queue = self.left_game_state_queue
         else:
             game_state_queue = self.right_game_state_queue
 
         while True:
-            game_state = game_state_queue.get()  # this will block indefinitely
-            logger.debug(
-                "Serving game state to [{}:{}]".format(request.player_name, request.paddle_strategy_name))
-            yield game_state
+            # lets block until at least one game state is found
+            first_game_state = game_state_queue.get()
+
+            # now drain the rest
+            following_game_states = [game_state_queue.get_nowait() for _ in range(game_state_queue.qsize())]
+            game_state_buffer = GameStateBuffer()
+            game_state_buffer.game_states.append(first_game_state)
+            game_state_buffer.game_states.extend(following_game_states)
+
+            # game_state = game_state_queue.get()  # this will block indefinitely
+            # logger.debug(
+            #     "Serving game state to [{}:{}]".format(request.player_name, request.paddle_strategy_name))
+            # yield game_state
+            yield game_state_buffer
 
     def register_player(self, request, context):
         logger.info("Registering {}:{} controlling the {}".format(request.player_name,

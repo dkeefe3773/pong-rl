@@ -38,6 +38,8 @@ class GameStateBuilder:
         proto_coords = [Coord(x=int(poly_coord[0]), y=int(poly_coord[1])) for poly_coord in
                         list(game_actor.shape.exterior.coords)]
         proto_actor.coords.extend(proto_coords)
+        velocity_coord = Coord(x=int(game_actor.velocity[0]), y = int(game_actor.velocity[1]))
+        proto_actor.velocity.CopyFrom(velocity_coord)
         proto_actor.actor_type = get_proto_actor_type(game_actor)
         self._game_state.actors.append(proto_actor)
         return self

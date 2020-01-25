@@ -5,7 +5,8 @@ from typing import Optional, Tuple
 from shapely.geometry import Polygon
 
 from config import logging_configurator
-from proto_gen.gamemaster_pb2 import GameState, PaddleAction, PaddleDirective, PaddleType, Actor, ActorType
+from proto_gen.gamemaster_pb2 import GameState, PaddleAction, PaddleDirective, PaddleType, Actor, ActorType, \
+    GameStateBuffer
 
 logger = logging_configurator.get_logger(__name__)
 
@@ -15,7 +16,7 @@ class PaddleController(ABC):
         self._paddle_type = paddle_type
 
     @abstractmethod
-    def process_game_state(self, game_state: GameState) -> Optional[PaddleAction]:
+    def process_game_state(self, game_state_buffer: GameStateBuffer) -> Optional[PaddleAction]:
         """
         :param game_state: the state of the game
         :return: A paddle Action object or None for no action
@@ -31,24 +32,21 @@ class StationaryPaddle(PaddleController):
     def __init__(self, paddle_type: PaddleType):
         super().__init__(paddle_type)
 
-    def process_game_state(self, game_state: GameState):
-        logger.debug(f"Processing game state {game_state.state_iteration}")
+    def process_game_state(self, game_state_buffer: GameStateBuffer):
         return PaddleAction(paddle_directive=PaddleDirective.STATIONARY)
 
 class AlwaysUpPaddle(PaddleController):
     def __init__(self, paddle_type: PaddleType):
         super().__init__(paddle_type)
 
-    def process_game_state(self, game_state: GameState):
-        logger.debug(f"Processing game state {game_state.state_iteration}")
+    def process_game_state(self, game_state_buffer: GameStateBuffer):
         return PaddleAction(paddle_directive=PaddleDirective.UP)
 
 class AlwaysDownPaddle(PaddleController):
     def __init__(self, paddle_type: PaddleType):
         super().__init__(paddle_type)
 
-    def process_game_state(self, game_state: GameState):
-        logger.debug(f"Processing game state {game_state.state_iteration}")
+    def process_game_state(self, game_state_buffer: GameStateBuffer):
         return PaddleAction(paddle_directive=PaddleDirective.DOWN)
 
 
@@ -56,8 +54,9 @@ class FollowTheBallPaddle(PaddleController):
     def __init__(self, paddle_type: PaddleType):
         super().__init__(paddle_type)
 
-    def process_game_state(self, game_state: GameState):
-        logger.debug(f"Processing game state {game_state.state_iteration}")
+    def process_game_state(self, game_state_buffer: GameStateBuffer):
+        # lets just get the most recent game state
+        game_state = game_state_buffer.game_states[-1]
         primary_ball: Actor = next(
             filter(lambda actor: actor.actor_type is ActorType.PRIMARY_BALL, game_state.actors), None)
 

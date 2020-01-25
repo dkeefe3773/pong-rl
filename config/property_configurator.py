@@ -239,8 +239,8 @@ class MatchPlayConfig(Config):
 
 class ServerClientCommunicationConfig(Config):
     @property
-    def action_queue_timeout(self) -> float:
-        return Config.get_property_float('server_client_communication', 'paddle_action_queue_blocking_timeout')
+    def is_client_response_lock(self) -> bool:
+        return Config.get_property_bool('server_client_communication', 'block_client_paddle_response')
 
 
 game_server_config = GameServerConfig()

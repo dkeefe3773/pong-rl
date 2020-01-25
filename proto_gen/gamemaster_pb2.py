@@ -22,7 +22,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x10gamemaster.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"g\n\x10PlayerIdentifier\x12\x13\n\x0bplayer_name\x18\x01 \x01(\t\x12\x1c\n\x14paddle_strategy_name\x18\x02 \x01(\t\x12 \n\x0bpaddle_type\x18\x03 \x01(\x0e\x32\x0b.PaddleType\"\x1d\n\x05\x43oord\x12\t\n\x01x\x18\x01 \x01(\x05\x12\t\n\x01y\x18\x02 \x01(\x05\"?\n\x05\x41\x63tor\x12\x1e\n\nactor_type\x18\x01 \x01(\x0e\x32\n.ActorType\x12\x16\n\x06\x63oords\x18\x02 \x03(\x0b\x32\x06.Coord\"?\n\nImageFrame\x12\r\n\x05image\x18\x01 \x01(\x0c\x12\x10\n\x08num_rows\x18\x02 \x01(\r\x12\x10\n\x08num_cols\x18\x03 \x01(\r\"}\n\tScoreCard\x12!\n\x06player\x18\x01 \x01(\x0b\x32\x11.PlayerIdentifier\x12\x1b\n\x13\x63urrent_game_points\x18\x02 \x01(\r\x12\x1a\n\x12total_match_points\x18\x03 \x01(\r\x12\x14\n\x0ctotal_points\x18\x04 \x01(\r\"\xa7\x01\n\tGameState\x12\x17\n\x0fstate_iteration\x18\x02 \x01(\x04\x12\x16\n\x06\x61\x63tors\x18\x03 \x03(\x0b\x32\x06.Actor\x12 \n\x0b\x61rena_frame\x18\x04 \x01(\x0b\x32\x0b.ImageFrame\x12\"\n\x0eleft_scorecard\x18\x05 \x01(\x0b\x32\n.ScoreCard\x12#\n\x0fright_scorecard\x18\x06 \x01(\x0b\x32\n.ScoreCard\"h\n\x0cPaddleAction\x12,\n\x11player_identifier\x18\x01 \x01(\x0b\x32\x11.PlayerIdentifier\x12*\n\x10paddle_directive\x18\x02 \x01(\x0e\x32\x10.PaddleDirective*.\n\nPaddleType\x12\x0b\n\x07NOT_SET\x10\x00\x12\x08\n\x04LEFT\x10\x01\x12\t\n\x05RIGHT\x10\x02*W\n\tActorType\x12\x0b\n\x07UNKNOWN\x10\x00\x12\x0f\n\x0bLEFT_PADDLE\x10\x01\x12\x10\n\x0cRIGHT_PADDLE\x10\x02\x12\x10\n\x0cPRIMARY_BALL\x10\x03\x12\x08\n\x04WALL\x10\x04*3\n\x0fPaddleDirective\x12\x06\n\x02UP\x10\x00\x12\x08\n\x04\x44OWN\x10\x01\x12\x0e\n\nSTATIONARY\x10\x02\x32\xc8\x01\n\nGameMaster\x12\x36\n\x11stream_game_state\x12\x11.PlayerIdentifier\x1a\n.GameState\"\x00\x30\x01\x12>\n\x0fregister_player\x12\x11.PlayerIdentifier\x1a\x16.google.protobuf.Empty\"\x00\x12\x42\n\x15submit_paddle_actions\x12\r.PaddleAction\x1a\x16.google.protobuf.Empty\"\x00(\x01\x62\x06proto3')
+  serialized_pb=_b('\n\x10gamemaster.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"g\n\x10PlayerIdentifier\x12\x13\n\x0bplayer_name\x18\x01 \x01(\t\x12\x1c\n\x14paddle_strategy_name\x18\x02 \x01(\t\x12 \n\x0bpaddle_type\x18\x03 \x01(\x0e\x32\x0b.PaddleType\"\x1d\n\x05\x43oord\x12\t\n\x01x\x18\x01 \x01(\x05\x12\t\n\x01y\x18\x02 \x01(\x05\"Y\n\x05\x41\x63tor\x12\x1e\n\nactor_type\x18\x01 \x01(\x0e\x32\n.ActorType\x12\x16\n\x06\x63oords\x18\x02 \x03(\x0b\x32\x06.Coord\x12\x18\n\x08velocity\x18\x03 \x01(\x0b\x32\x06.Coord\"?\n\nImageFrame\x12\r\n\x05image\x18\x01 \x01(\x0c\x12\x10\n\x08num_rows\x18\x02 \x01(\r\x12\x10\n\x08num_cols\x18\x03 \x01(\r\"}\n\tScoreCard\x12!\n\x06player\x18\x01 \x01(\x0b\x32\x11.PlayerIdentifier\x12\x1b\n\x13\x63urrent_game_points\x18\x02 \x01(\r\x12\x1a\n\x12total_match_points\x18\x03 \x01(\r\x12\x14\n\x0ctotal_points\x18\x04 \x01(\r\"\xa7\x01\n\tGameState\x12\x17\n\x0fstate_iteration\x18\x02 \x01(\x04\x12\x16\n\x06\x61\x63tors\x18\x03 \x03(\x0b\x32\x06.Actor\x12 \n\x0b\x61rena_frame\x18\x04 \x01(\x0b\x32\x0b.ImageFrame\x12\"\n\x0eleft_scorecard\x18\x05 \x01(\x0b\x32\n.ScoreCard\x12#\n\x0fright_scorecard\x18\x06 \x01(\x0b\x32\n.ScoreCard\"2\n\x0fGameStateBuffer\x12\x1f\n\x0bgame_states\x18\x01 \x03(\x0b\x32\n.GameState\"h\n\x0cPaddleAction\x12,\n\x11player_identifier\x18\x01 \x01(\x0b\x32\x11.PlayerIdentifier\x12*\n\x10paddle_directive\x18\x02 \x01(\x0e\x32\x10.PaddleDirective*.\n\nPaddleType\x12\x0b\n\x07NOT_SET\x10\x00\x12\x08\n\x04LEFT\x10\x01\x12\t\n\x05RIGHT\x10\x02*W\n\tActorType\x12\x0b\n\x07UNKNOWN\x10\x00\x12\x0f\n\x0bLEFT_PADDLE\x10\x01\x12\x10\n\x0cRIGHT_PADDLE\x10\x02\x12\x10\n\x0cPRIMARY_BALL\x10\x03\x12\x08\n\x04WALL\x10\x04*3\n\x0fPaddleDirective\x12\x06\n\x02UP\x10\x00\x12\x08\n\x04\x44OWN\x10\x01\x12\x0e\n\nSTATIONARY\x10\x02\x32\xce\x01\n\nGameMaster\x12<\n\x11stream_game_state\x12\x11.PlayerIdentifier\x1a\x10.GameStateBuffer\"\x00\x30\x01\x12>\n\x0fregister_player\x12\x11.PlayerIdentifier\x1a\x16.google.protobuf.Empty\"\x00\x12\x42\n\x15submit_paddle_actions\x12\r.PaddleAction\x1a\x16.google.protobuf.Empty\"\x00(\x01\x62\x06proto3')
   ,
   dependencies=[google_dot_protobuf_dot_empty__pb2.DESCRIPTOR,google_dot_protobuf_dot_timestamp__pb2.DESCRIPTOR,])
 
@@ -47,8 +47,8 @@ _PADDLETYPE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=751,
-  serialized_end=797,
+  serialized_start=829,
+  serialized_end=875,
 )
 _sym_db.RegisterEnumDescriptor(_PADDLETYPE)
 
@@ -82,8 +82,8 @@ _ACTORTYPE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=799,
-  serialized_end=886,
+  serialized_start=877,
+  serialized_end=964,
 )
 _sym_db.RegisterEnumDescriptor(_ACTORTYPE)
 
@@ -109,8 +109,8 @@ _PADDLEDIRECTIVE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=888,
-  serialized_end=939,
+  serialized_start=966,
+  serialized_end=1017,
 )
 _sym_db.RegisterEnumDescriptor(_PADDLEDIRECTIVE)
 
@@ -233,6 +233,13 @@ _ACTOR = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='velocity', full_name='Actor.velocity', index=2,
+      number=3, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -246,7 +253,7 @@ _ACTOR = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=218,
-  serialized_end=281,
+  serialized_end=307,
 )
 
 
@@ -290,8 +297,8 @@ _IMAGEFRAME = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=283,
-  serialized_end=346,
+  serialized_start=309,
+  serialized_end=372,
 )
 
 
@@ -342,8 +349,8 @@ _SCORECARD = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=348,
-  serialized_end=473,
+  serialized_start=374,
+  serialized_end=499,
 )
 
 
@@ -401,8 +408,39 @@ _GAMESTATE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=476,
-  serialized_end=643,
+  serialized_start=502,
+  serialized_end=669,
+)
+
+
+_GAMESTATEBUFFER = _descriptor.Descriptor(
+  name='GameStateBuffer',
+  full_name='GameStateBuffer',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='game_states', full_name='GameStateBuffer.game_states', index=0,
+      number=1, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=671,
+  serialized_end=721,
 )
 
 
@@ -439,18 +477,20 @@ _PADDLEACTION = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=645,
-  serialized_end=749,
+  serialized_start=723,
+  serialized_end=827,
 )
 
 _PLAYERIDENTIFIER.fields_by_name['paddle_type'].enum_type = _PADDLETYPE
 _ACTOR.fields_by_name['actor_type'].enum_type = _ACTORTYPE
 _ACTOR.fields_by_name['coords'].message_type = _COORD
+_ACTOR.fields_by_name['velocity'].message_type = _COORD
 _SCORECARD.fields_by_name['player'].message_type = _PLAYERIDENTIFIER
 _GAMESTATE.fields_by_name['actors'].message_type = _ACTOR
 _GAMESTATE.fields_by_name['arena_frame'].message_type = _IMAGEFRAME
 _GAMESTATE.fields_by_name['left_scorecard'].message_type = _SCORECARD
 _GAMESTATE.fields_by_name['right_scorecard'].message_type = _SCORECARD
+_GAMESTATEBUFFER.fields_by_name['game_states'].message_type = _GAMESTATE
 _PADDLEACTION.fields_by_name['player_identifier'].message_type = _PLAYERIDENTIFIER
 _PADDLEACTION.fields_by_name['paddle_directive'].enum_type = _PADDLEDIRECTIVE
 DESCRIPTOR.message_types_by_name['PlayerIdentifier'] = _PLAYERIDENTIFIER
@@ -459,6 +499,7 @@ DESCRIPTOR.message_types_by_name['Actor'] = _ACTOR
 DESCRIPTOR.message_types_by_name['ImageFrame'] = _IMAGEFRAME
 DESCRIPTOR.message_types_by_name['ScoreCard'] = _SCORECARD
 DESCRIPTOR.message_types_by_name['GameState'] = _GAMESTATE
+DESCRIPTOR.message_types_by_name['GameStateBuffer'] = _GAMESTATEBUFFER
 DESCRIPTOR.message_types_by_name['PaddleAction'] = _PADDLEACTION
 DESCRIPTOR.enum_types_by_name['PaddleType'] = _PADDLETYPE
 DESCRIPTOR.enum_types_by_name['ActorType'] = _ACTORTYPE
@@ -507,6 +548,13 @@ GameState = _reflection.GeneratedProtocolMessageType('GameState', (_message.Mess
   ))
 _sym_db.RegisterMessage(GameState)
 
+GameStateBuffer = _reflection.GeneratedProtocolMessageType('GameStateBuffer', (_message.Message,), dict(
+  DESCRIPTOR = _GAMESTATEBUFFER,
+  __module__ = 'gamemaster_pb2'
+  # @@protoc_insertion_point(class_scope:GameStateBuffer)
+  ))
+_sym_db.RegisterMessage(GameStateBuffer)
+
 PaddleAction = _reflection.GeneratedProtocolMessageType('PaddleAction', (_message.Message,), dict(
   DESCRIPTOR = _PADDLEACTION,
   __module__ = 'gamemaster_pb2'
@@ -522,8 +570,8 @@ _GAMEMASTER = _descriptor.ServiceDescriptor(
   file=DESCRIPTOR,
   index=0,
   serialized_options=None,
-  serialized_start=942,
-  serialized_end=1142,
+  serialized_start=1020,
+  serialized_end=1226,
   methods=[
   _descriptor.MethodDescriptor(
     name='stream_game_state',
@@ -531,7 +579,7 @@ _GAMEMASTER = _descriptor.ServiceDescriptor(
     index=0,
     containing_service=None,
     input_type=_PLAYERIDENTIFIER,
-    output_type=_GAMESTATE,
+    output_type=_GAMESTATEBUFFER,
     serialized_options=None,
   ),
   _descriptor.MethodDescriptor(
