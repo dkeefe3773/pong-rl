@@ -29,9 +29,9 @@ def billiard_ball_rebound(ball1: Ball, ball2: Ball) -> Tuple[Any, Any]:
     delta_x21_norm = numpy.linalg.norm(delta_x21)
 
     rebound_v1 = ball1.velocity - (
-                2 * mass_2 / total_mass * numpy.dot(delta_v12, delta_x12) / delta_x12_norm ** 2) * delta_x12
+            2 * mass_2 / total_mass * numpy.dot(delta_v12, delta_x12) / delta_x12_norm ** 2) * delta_x12
     rebound_v2 = ball2.velocity - (
-                2 * mass_1 / total_mass * numpy.dot(delta_v21, delta_x21) / delta_x21_norm ** 2) * delta_x21
+            2 * mass_1 / total_mass * numpy.dot(delta_v21, delta_x21) / delta_x21_norm ** 2) * delta_x21
     return rebound_v1, rebound_v2
 
 

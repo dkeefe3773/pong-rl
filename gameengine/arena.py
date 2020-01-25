@@ -101,4 +101,3 @@ class Arena:
                                                  int((self.arena_height / 2.0) + PADDLE_HEIGHT / 2))
         right_paddle = Paddle("right_paddle", right_paddle_poly, Velocity(0, 0), PaddleType.RIGHT)
         self.paddles = (left_paddle, right_paddle)
-

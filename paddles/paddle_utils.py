@@ -68,6 +68,7 @@ class ActorSummary:
         self.shape = poly
         self.vel = vel
 
+
 def actor_to_summary(actor: Actor, transform: List[int]) -> ActorSummary:
     poly = Polygon([(coord.x, coord.y) for coord in actor.coords])
     vel = [actor.velocity.x, actor.velocity.y]

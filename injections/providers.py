@@ -38,13 +38,11 @@ class PaddleProviders(containers.DeclarativeContainer):
 
     left_enhanced_follow_the_ball_paddle = providers.Factory(EnhancedFollowTheBallPaddle,
                                                              paddle_type=PaddleType.LEFT,
-                                                             mirror_image = False)
+                                                             mirror_image=False)
 
     right_enhanced_follow_the_ball_paddle = providers.Factory(EnhancedFollowTheBallPaddle,
                                                               paddle_type=PaddleType.RIGHT,
-                                                              mirror_image = True)
-
-
+                                                              mirror_image=True)
 
 
 class PlayerProviders(containers.DeclarativeContainer):

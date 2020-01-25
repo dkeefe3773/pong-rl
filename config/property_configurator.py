@@ -243,7 +243,6 @@ class GameRendererConfig(Config):
         return Config.get_property_int('game_renderer', 'generic_spacer')
 
 
-
 class MatchPlayConfig(Config):
     @property
     def points_per_match(self) -> int:

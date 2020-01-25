@@ -49,6 +49,7 @@ def update_primary_ball(ball: Ball, paddle: Paddle):
     rebound_vel_y = -rebound_vel_y if paddle_hit_y < paddle_mid_y else rebound_vel_y
     ball.velocity = (rebound_vel_x, rebound_vel_y)
 
+
 class CollisionStrategyByFlavor:
     def __init__(self, primary_ball_callable_provider: DelegatedCallable):
         self.primary_ball_callable_provider = primary_ball_callable_provider

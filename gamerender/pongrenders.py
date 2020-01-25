@@ -119,14 +119,14 @@ class DefaultPongRenderer:
         # specify positions for the registration notifications
         self.player_left_registration_pos = (REGISTRATION_OFFSET_HORIZ, 0)
         self.player_right_registration_pos = (
-        REGISTRATION_OFFSET_HORIZ, self.registration_font_info.size + game_render_config.generic_spacer)
+            REGISTRATION_OFFSET_HORIZ, self.registration_font_info.size + game_render_config.generic_spacer)
 
         # specify position for game commencement notification
         self.commencement_pos = (0, self.canvas_height // 2)
 
         # specify position of fps counter relative to meta surface
         self.fps_pos = (
-        self.canvas_width - 100, game_render_config.meta_board_height // 2 - self.fps_font_info.size // 4)
+            self.canvas_width - 100, game_render_config.meta_board_height // 2 - self.fps_font_info.size // 4)
 
         # tracks our scoring
         self.scorekeeper: Optional[ScoreKeeper] = None

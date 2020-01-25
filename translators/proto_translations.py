@@ -21,6 +21,7 @@ def get_proto_actor_type(game_actor: Actor):
     else:
         return ActorType.UNKNOWN
 
+
 def create_proto_scorecard(scorecard: StandardScoreCard) -> ScoreCard:
     proto_score_card = ScoreCard()
     proto_score_card.player.CopyFrom(scorecard.player_identifier)
@@ -28,6 +29,7 @@ def create_proto_scorecard(scorecard: StandardScoreCard) -> ScoreCard:
     proto_score_card.total_match_points = scorecard.total_matches
     proto_score_card.total_points = scorecard.total_points
     return proto_score_card
+
 
 class GameStateBuilder:
     def __init__(self):
@@ -38,7 +40,7 @@ class GameStateBuilder:
         proto_coords = [Coord(x=int(poly_coord[0]), y=int(poly_coord[1])) for poly_coord in
                         list(game_actor.shape.exterior.coords)]
         proto_actor.coords.extend(proto_coords)
-        velocity_coord = Coord(x=int(game_actor.velocity[0]), y = int(game_actor.velocity[1]))
+        velocity_coord = Coord(x=int(game_actor.velocity[0]), y=int(game_actor.velocity[1]))
         proto_actor.velocity.CopyFrom(velocity_coord)
         proto_actor.actor_type = get_proto_actor_type(game_actor)
         self._game_state.actors.append(proto_actor)

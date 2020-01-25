@@ -257,4 +257,3 @@ class ScoringManager:
             for score_font_cache in pong_renderer.cached_score_fonts_by_paddle_type.values():
                 score_font_cache.points_drawn = score_font_cache.points_drawn + 1
             pong_renderer.arena.reset_starting_positions()
-
