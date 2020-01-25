@@ -10,7 +10,7 @@ logger = logging_configurator.get_logger(__name__)
 
 
 class PaddleController(ABC):
-    def __init__(self, paddle_type: PaddleType, mirror_image: bool = False):
+    def __init__(self, paddle_type: PaddleType, mirror_image: bool = False, preserve_alpha: bool = False):
         """
 
         :param paddle_type:    left of right
@@ -18,9 +18,10 @@ class PaddleController(ABC):
         itself in coordinates that have been mirrored across the center column of the arena.  In other words,
         left becomes right and right becomes left.  This is useful if a paddle model has been trained on the
         left hand side so that it can be used on the right hand side
+        :param preserve_alpha: if true, the alpha channel will be preserved in the grey scale and rgb images
         """
         self._paddle_type = paddle_type
-        self.game_state_wrapper = GameStateWrapper(paddle_type, mirror_image)
+        self.game_state_wrapper = GameStateWrapper(paddle_type, mirror_image, preserve_alpha)
 
     @abstractmethod
     def process_game_state(self, game_state_buffer: GameStateBuffer) -> Optional[PaddleAction]:
@@ -91,7 +92,7 @@ class EnhancedFollowTheBallPaddle(PaddleController):
 
         ball_moving_away = primary_ball.vel.vel_x > 0
         if ball_moving_away:
-            arena_height = self.game_state_wrapper.image_array.shape[0] // 2
+            arena_height = self.game_state_wrapper.image_grey_array.shape[0] // 2
             if my_paddle.shape.centroid.y > arena_height:
                 directive = PaddleDirective.UP
             elif my_paddle.shape.centroid.y < arena_height:

@@ -41,11 +41,32 @@ def show_image_from_array(array: numpy.ndarray):
     image.show()
 
 
+def convert_bitdepth32_to_greyscale(array: numpy.ndarray, preserve_alpha: bool = False):
+    """
+    Converts a numpy array that represents an image having pixels as 32 bit color
+    :param array: the numpy array representing the image
+    :param preserve_alpha: if true, the grey scale will have an alpha channel as well, if available on the original array
+    :return:  the converted image as numpy array having shape: [row, col, 1] -> for no alpha and [row,col,2] with alpha
+    """
+    grey_image = Image.fromarray(array).convert('LA') if preserve_alpha else Image.fromarray(array).convert('L')
+    return numpy.array(grey_image)
+
+
+def convert_bitdepth32_to_rgb(array: numpy.ndarray, preserve_alpha: bool = False):
+    """
+    Converts a numpy array that represents an image having pixels as 32 bit color
+    :param array: the numpy array representing the image
+    :param preserve_alpha: if true, the rgb will have an alpha channel as well, if available on the original array
+    :return: the converted image as numpy array having shape: [row, col, 3] -> for no alpha and [row,col,4] with alpha
+    """
+    rgb_image = Image.fromarray(array).convert('RGBA') if preserve_alpha else Image.fromarray(array).convert('RGB')
+    return numpy.array(rgb_image)
+
+
 class ActorSummary:
     def __init__(self, poly: Polygon, vel: Velocity):
         self.shape = poly
         self.vel = vel
-
 
 def actor_to_summary(actor: Actor, transform: List[int]) -> ActorSummary:
     poly = Polygon([(coord.x, coord.y) for coord in actor.coords])
@@ -62,17 +83,21 @@ class GameStateWrapper():
     imaging will be done as appropriate on the image and the actors.
     """
 
-    def __init__(self, paddle_type: PaddleType, mirror_reflect_arena: bool = False):
+    def __init__(self, paddle_type: PaddleType, mirror_reflect_arena: bool = False, preserve_alpha: bool = False):
         """
         :param paddle_type:         left or right
         :param mirror_reflect_arena: if you are assigned a right paddle but have an algorithm that works on the left,
         or vice-versa, set this property to true.  The image array will be flipped around the center column
         and the vel_x component sign will be flipped
+        :param preserve_alpha: if true, rgb and/or grey scale arrays will preserve the alpha channel
         """
         self.paddle_type = paddle_type
         self.mirror_reflect_arena = mirror_reflect_arena
+        self.preserve_alpha = preserve_alpha
         self._game_state: Optional[GameState] = None
-        self._image_array: Optional[numpy.ndarray] = None
+        self._image_color32_array: Optional[numpy.ndarray] = None
+        self._image_grey_array: Optional[numpy.ndarray] = None
+        self._image_rgb_array: Optional[numpy.ndarray] = None
         self._primary_ball: Optional[ActorSummary] = None
         self._my_paddle: Optional[ActorSummary] = None
         self._opponent_paddle: Optional[ActorSummary] = None
@@ -98,24 +123,45 @@ class GameStateWrapper():
         self._my_scorecard = None
         self._oppenent_scorecard = None
 
-        self._image_array = image_frame_to_array(self._game_state.arena_frame)
+        self._image_color32_array = image_frame_to_array(self._game_state.arena_frame)
 
         if self.mirror_reflect_arena:
-            self._image_array = numpy.fliplr(self._image_array)
+            self._image_color32_array = numpy.fliplr(self._image_color32_array)
             if not self.transform:
                 # [-1 0   xoffset]
                 # [0 1    yoffset]
                 # This transforms basis so x-axis is flipped and then slides the origin back the full width of the frame
                 # to provide a mirror image
-                self.transform.extend([-1, 0, 0, 1, self._image_array.shape[1], 0])
+                self.transform.extend([-1, 0, 0, 1, self._image_color32_array.shape[1], 0])
 
     @property
-    def image_array(self) -> numpy.ndarray:
-        return self._image_array
+    def image_color32_array(self) -> numpy.ndarray:
+        """
+        :return:  the arena frame where rgba pixels are encoded as 32 bit integers
+        """
+        return self._image_color32_array
+
+    @property
+    def image_grey_array(self) -> numpy.ndarray:
+        """
+        :return: the arena frame as greyscale array
+        """
+        if self._image_grey_array is None:
+            self._image_grey_array = convert_bitdepth32_to_greyscale(self._image_color32_array, self.preserve_alpha)
+        return self._image_grey_array
+
+    @property
+    def image_rgb_array(self) -> numpy.ndarray:
+        """
+        :return: the arena frame as greyscale array
+        """
+        if self._image_rgb_array is None:
+            self._image_rgb_array = convert_bitdepth32_to_rgb(self._image_color32_array, self.preserve_alpha)
+        return self._image_rgb_array
 
     @property
     def primary_ball(self) -> ActorSummary:
-        if not self._primary_ball:
+        if self._primary_ball is None:
             primary_ball_actor: Actor = next(
                 filter(lambda actor: actor.actor_type is ActorType.PRIMARY_BALL, self._game_state.actors), None)
             if primary_ball_actor:
@@ -124,7 +170,7 @@ class GameStateWrapper():
 
     @property
     def my_paddle(self) -> ActorSummary:
-        if not self._my_paddle:
+        if self._my_paddle is None:
             if self.paddle_type is PaddleType.LEFT:
                 the_paddle = next(
                     filter(lambda actor: actor.actor_type is ActorType.LEFT_PADDLE, self._game_state.actors), None)
@@ -137,7 +183,7 @@ class GameStateWrapper():
 
     @property
     def opponent_paddle(self) -> Actor:
-        if not self._opponent_paddle:
+        if self._opponent_paddle is None:
             if self.paddle_type is PaddleType.LEFT:
                 the_paddle = next(
                     filter(lambda actor: actor.actor_type is ActorType.RIGHT_PADDLE, self._game_state.actors), None)
