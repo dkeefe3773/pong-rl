@@ -4,7 +4,7 @@ from typing import Generator
 import grpc
 
 from config import logging_configurator
-from proto_gen.gamemaster_pb2 import GameState, PlayerIdentifier, PaddleAction, GameStateBuffer
+from proto_gen.gamemaster_pb2 import PlayerIdentifier, PaddleAction, GameStateBuffer
 
 logger = logging_configurator.get_logger(__name__)
 

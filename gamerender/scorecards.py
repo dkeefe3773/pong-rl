@@ -103,4 +103,3 @@ class ScoreKeeper:
 
     def get_scorecards(self) -> List[StandardScoreCard]:
         return list(self.player_to_scorecard.values())
-
