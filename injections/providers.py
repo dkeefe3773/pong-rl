@@ -27,17 +27,23 @@ class PaddleProviders(containers.DeclarativeContainer):
     left_stationary_paddle = providers.Factory(StationaryPaddle, paddle_type=PaddleType.LEFT)
     right_stationary_paddle = providers.Factory(StationaryPaddle, paddle_type=PaddleType.RIGHT)
 
-    left_follow_the_ball_paddle = providers.Factory(FollowTheBallPaddle, paddle_type=PaddleType.LEFT)
-    right_follow_the_ball_paddle = providers.Factory(FollowTheBallPaddle, paddle_type=PaddleType.RIGHT)
-
-    left_enhanced_follow_the_ball_paddle = providers.Factory(EnhancedFollowTheBallPaddle, paddle_type=PaddleType.LEFT)
-    right_enhanced_follow_the_ball_paddle = providers.Factory(EnhancedFollowTheBallPaddle, paddle_type=PaddleType.RIGHT)
-
     left_always_down_paddle = providers.Factory(AlwaysDownPaddle, paddle_type=PaddleType.LEFT)
     right_always_down_paddle = providers.Factory(AlwaysDownPaddle, paddle_type=PaddleType.RIGHT)
 
     left_always_up_paddle = providers.Factory(AlwaysUpPaddle, paddle_type=PaddleType.LEFT)
     right_always_up_paddle = providers.Factory(AlwaysUpPaddle, paddle_type=PaddleType.RIGHT)
+
+    left_follow_the_ball_paddle = providers.Factory(FollowTheBallPaddle, paddle_type=PaddleType.LEFT)
+    right_follow_the_ball_paddle = providers.Factory(FollowTheBallPaddle, paddle_type=PaddleType.RIGHT)
+
+    left_enhanced_follow_the_ball_paddle = providers.Factory(EnhancedFollowTheBallPaddle,
+                                                             paddle_type=PaddleType.LEFT,
+                                                             mirror_image = False)
+
+    right_enhanced_follow_the_ball_paddle = providers.Factory(EnhancedFollowTheBallPaddle,
+                                                              paddle_type=PaddleType.RIGHT,
+                                                              mirror_image = True)
+
 
 
 
