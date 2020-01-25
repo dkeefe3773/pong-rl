@@ -230,6 +230,19 @@ class GameRendererConfig(Config):
     def fps_cap(self) -> int:
         return Config.get_property_int('game_renderer', 'fps_cap')
 
+    @property
+    def score_board_height(self) -> int:
+        return Config.get_property_int('game_renderer', 'score_board_pane_height')
+
+    @property
+    def meta_board_height(self) -> int:
+        return Config.get_property_int('game_renderer', 'meta_data_pane_height')
+
+    @property
+    def generic_spacer(self) -> int:
+        return Config.get_property_int('game_renderer', 'generic_spacer')
+
+
 
 class MatchPlayConfig(Config):
     @property
