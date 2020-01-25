@@ -5,6 +5,7 @@ from typing import Optional, Tuple
 from shapely.geometry import Polygon
 
 from config import logging_configurator
+from paddles.paddle_utils import image_frame_to_array
 from proto_gen.gamemaster_pb2 import GameState, PaddleAction, PaddleDirective, PaddleType, Actor, ActorType, \
     GameStateBuffer
 
@@ -78,4 +79,50 @@ class FollowTheBallPaddle(PaddleController):
         else:
             # lets add some randomness here so that when the paddles play each other they don't get stuck in a loop
             directive = random.choice([PaddleDirective.UP, PaddleDirective.DOWN])
+        return PaddleAction(paddle_directive=directive)
+
+class EnhancedFollowTheBallPaddle(PaddleController):
+    def __init__(self, paddle_type: PaddleType):
+        super().__init__(paddle_type)
+
+    def process_game_state(self, game_state_buffer: GameStateBuffer):
+        # lets just get the most recent game state
+        game_state = game_state_buffer.game_states[-1]
+        primary_ball: Actor = next(
+            filter(lambda actor: actor.actor_type is ActorType.PRIMARY_BALL, game_state.actors), None)
+
+        if self.paddle_type is PaddleType.LEFT:
+            my_paddle = next(filter(lambda actor: actor.actor_type is ActorType.LEFT_PADDLE, game_state.actors), None)
+        else:
+            my_paddle = next(filter(lambda actor: actor.actor_type is ActorType.RIGHT_PADDLE, game_state.actors), None)
+
+        if primary_ball is None or my_paddle is None:
+            logger.error("Primary ball or my paddle is not found in actor list")
+            return PaddleAction(paddle_directive=PaddleDirective.STATIONARY)
+
+        if self.paddle_type is PaddleType.LEFT:
+            ball_moving_away = primary_ball.velocity.x > 0
+        else:
+            ball_moving_away = primary_ball.velocity.x < 0
+
+        my_paddle_shape = Polygon([(coord.x, coord.y) for coord in my_paddle.coords])
+        if ball_moving_away:
+            frame_array = image_frame_to_array(game_state.arena_frame)
+            arena_height = frame_array.shape[0] // 2
+
+            if my_paddle_shape.centroid.y > arena_height:
+                directive = PaddleDirective.UP
+            elif my_paddle_shape.centroid.y < arena_height:
+                directive = PaddleDirective.DOWN
+            else:
+                directive = PaddleDirective.STATIONARY
+        else:
+            primary_ball_shape = Polygon([(coord.x, coord.y) for coord in primary_ball.coords])
+            if primary_ball_shape.centroid.y < my_paddle_shape.centroid.y:
+                directive = PaddleDirective.UP
+            elif primary_ball_shape.centroid.y > my_paddle_shape.centroid.y:
+                directive = PaddleDirective.DOWN
+            else:
+                # lets add some randomness here so that when the paddles play each other they don't get stuck in a loop
+                directive = random.choice([PaddleDirective.UP, PaddleDirective.DOWN])
         return PaddleAction(paddle_directive=directive)

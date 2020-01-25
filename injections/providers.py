@@ -14,7 +14,8 @@ from gameengine.paddle_to_wall_collision import PaddleWallCollider
 from gamerender.pongrenders import DefaultPongRenderer
 from gameserver.pong_server import PongServer
 from gameserver.pong_servicer import DummyPongServicer, DefaultPongServicer
-from paddles.paddle import StationaryPaddle, FollowTheBallPaddle, AlwaysDownPaddle, AlwaysUpPaddle
+from paddles.paddle import StationaryPaddle, FollowTheBallPaddle, AlwaysDownPaddle, AlwaysUpPaddle, \
+    EnhancedFollowTheBallPaddle
 from player.controller import PlayerController
 from proto_gen.gamemaster_pb2 import PaddleType
 
@@ -29,11 +30,15 @@ class PaddleProviders(containers.DeclarativeContainer):
     left_follow_the_ball_paddle = providers.Factory(FollowTheBallPaddle, paddle_type=PaddleType.LEFT)
     right_follow_the_ball_paddle = providers.Factory(FollowTheBallPaddle, paddle_type=PaddleType.RIGHT)
 
+    left_enhanced_follow_the_ball_paddle = providers.Factory(EnhancedFollowTheBallPaddle, paddle_type=PaddleType.LEFT)
+    right_enhanced_follow_the_ball_paddle = providers.Factory(EnhancedFollowTheBallPaddle, paddle_type=PaddleType.RIGHT)
+
     left_always_down_paddle = providers.Factory(AlwaysDownPaddle, paddle_type=PaddleType.LEFT)
     right_always_down_paddle = providers.Factory(AlwaysDownPaddle, paddle_type=PaddleType.RIGHT)
 
     left_always_up_paddle = providers.Factory(AlwaysUpPaddle, paddle_type=PaddleType.LEFT)
     right_always_up_paddle = providers.Factory(AlwaysUpPaddle, paddle_type=PaddleType.RIGHT)
+
 
 
 class PlayerProviders(containers.DeclarativeContainer):
@@ -48,7 +53,7 @@ class PlayerProviders(containers.DeclarativeContainer):
     right_player = providers.Singleton(PlayerController,
                                        name=property_configurator.player_config.right_player_name,
                                        paddle_type=PaddleType.RIGHT,
-                                       paddle_controller=PaddleProviders.right_follow_the_ball_paddle)
+                                       paddle_controller=PaddleProviders.right_enhanced_follow_the_ball_paddle)
 
 
 class GameArenaProvider(containers.DeclarativeContainer):

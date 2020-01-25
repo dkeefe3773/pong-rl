@@ -46,7 +46,7 @@ class GameStateBuilder:
 
     def add_arena_surface(self, arena_surface: pygame.Surface) -> GameStateBuilder:
         # note, it is MUCH faster sending 2d array of encoded 32 bit color integers rather than 3d array of r,g,b
-        pixels = pygame.surfarray.pixels2d(arena_surface)
+        pixels = numpy.transpose(pygame.surfarray.pixels2d(arena_surface))
         arena_byte_array = numpy.ndarray.tobytes(pixels)
         arena_frame: ImageFrame = ImageFrame(image=arena_byte_array, num_rows=pixels.shape[0], num_cols=pixels.shape[1])
         self._game_state.arena_frame.CopyFrom(arena_frame)
