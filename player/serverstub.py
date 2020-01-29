@@ -14,7 +14,9 @@ from config.property_configurator import GameServerConfig
 _game_server_config = GameServerConfig()
 _game_master_address = "{}:{}".format(_game_server_config.host, _game_server_config.port)
 
-_global_channel = grpc.insecure_channel(_game_master_address)
+# the default max message size is 4MB, lets crank that up to 100
+_channel_options = [('grpc.max_receive_message_length', 100 * 1024 * 1024)]
+_global_channel = grpc.insecure_channel(_game_master_address, options=_channel_options)
 _global_stub = GameMasterStub(_global_channel)
 
 
@@ -25,7 +27,7 @@ def get_transactional_server_stub() -> Generator[GameMasterStub, None, None]:
     exit is invoked, the stub will go out of scope, which in turn closes the channel.
     :return: a generator that yields a GameMasterStub
     """
-    with grpc.insecure_channel(_game_master_address) as channel:
+    with grpc.insecure_channel(_game_master_address, options=_channel_options) as channel:
         server_stub = GameMasterStub(channel)
         yield server_stub
         logger.info("Transactional GameMasterStub going out of scope")

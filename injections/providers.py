@@ -4,6 +4,7 @@ import dependency_injector.containers as containers
 import dependency_injector.providers as providers
 
 from config import property_configurator
+from config.property_configurator import server_client_communication_config
 from gameengine.arena import Arena
 from gameengine.ball_to_ball_collision import BilliardBallCollider
 from gameengine.ball_to_barrier_collision import IncidentAngleRebounder
@@ -100,8 +101,10 @@ class ThreadCommunicationProviders(containers.DeclarativeContainer):
     """
     Container for thread safe communication objects
     """
-    left_game_state_queue = providers.Singleton(Queue)
-    right_game_state_queue = providers.Singleton(Queue)
+    left_game_state_queue = providers.Singleton(Queue,
+                                                maxsize=server_client_communication_config.max_game_state_buffer_size)
+    right_game_state_queue = providers.Singleton(Queue,
+                                                 maxsize=server_client_communication_config.max_game_state_buffer_size)
     left_paddle_action_queue = providers.Singleton(Queue)
     right_paddle_action_queue = providers.Singleton(Queue)
 

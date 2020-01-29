@@ -258,6 +258,10 @@ class ServerClientCommunicationConfig(Config):
     def is_client_response_lock(self) -> bool:
         return Config.get_property_bool('server_client_communication', 'block_client_paddle_response')
 
+    @property
+    def max_game_state_buffer_size(self) -> bool:
+        return Config.get_property_int('server_client_communication', 'max_game_state_buffer_size')
+
 
 game_server_config = GameServerConfig()
 player_config = PlayerConfig()
