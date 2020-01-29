@@ -36,15 +36,11 @@ class DefaultPongServicer(gamemaster_pb2_grpc.GameMasterServicer):
             first_game_state = game_state_queue.get()
 
             # now drain the rest
-            following_game_states = [game_state_queue.get_nowait() for _ in range(game_state_queue.qsize())]
+            #following_game_states = [game_state_queue.get_nowait() for _ in range(game_state_queue.qsize())]
+            following_game_states = [game_state_queue.get() for _ in range(game_state_queue.qsize())]
             game_state_buffer = GameStateBuffer()
             game_state_buffer.game_states.append(first_game_state)
             game_state_buffer.game_states.extend(following_game_states)
-
-            # game_state = game_state_queue.get()  # this will block indefinitely
-            # logger.debug(
-            #     "Serving game state to [{}:{}]".format(request.player_name, request.paddle_strategy_name))
-            # yield game_state
             yield game_state_buffer
 
     def register_player(self, request, context):

@@ -1,3 +1,5 @@
+import os
+
 import click
 
 from config import logging_configurator
@@ -5,7 +7,6 @@ from gameserver.pong_server import PongServer
 from injections.providers import GrpcServerProviders
 
 logger = logging_configurator.get_logger(__name__)
-
 
 @click.command()
 def cli():
@@ -17,6 +18,8 @@ def cli():
     pong_server: PongServer = GrpcServerProviders.pong_server()
     pong_server.start_server_blocking()
 
-
 if __name__ == '__main__':
+    # print(os.sched_getaffinity(0))
+    # os.sched_setaffinity(0, [0])
+    # print(os.sched_getaffinity(0))
     cli()
