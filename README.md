@@ -16,7 +16,7 @@ To create your virtual conda environement for this project:
 `> conda activate pong_rl`
 
 If you need to add dependencies to your environment be sure to export the dependencies and check them into the project.
-`> conda env export > pong_rl_env.yaml`
+`> conda env export --no-builds > pong_rl_env.yaml`
 
 To refresh your environment:
 
