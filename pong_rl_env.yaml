@@ -1,4 +1,4 @@
-name: pong-rl
+name: pong_rl
 channels:
   - conda-forge
   - defaults
