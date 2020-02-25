@@ -1,10 +1,12 @@
 import math
+import unittest
 from typing import List
 
 import numpy
 from matplotlib import pylab
-
-import unittest
+from sklearn.datasets import load_digits
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
 
 """
 Creating a network from scratch.  Following tutorian in Adventures in Machine Learning: neural-networks-tutorial
@@ -68,7 +70,48 @@ def brute_force_feed_forward(layer_count: int, input: numpy.ndarray, layer_weigh
             output_from_next_layer[node_index] = sigmoid_activation(aggegrate_value)
     return output_from_next_layer
 
+
+def scale_data(input_data: numpy.ndarray) -> numpy.ndarray:
+    """
+    It is common to scale the input data for a neural network to be between  [0,1] or [-1,1].  This is because
+    it is seen the neurel network back propogation converges faster (and needs less data) when the input data
+    is on the same scale.  Otherwise, weights will vary wildly from input data element to input data element and
+    this leads to longer convergence time.
+    :param input_data: 2d numpy array of shape (num_samples, num_features)
+    :return: 2d numpy array where features have had their mean subtracted and normalized to their standard deviation.
+             In other words, most features will end up being between [-1, 1] with some outliers.
+    """
+    scaler = StandardScaler()
+    return scaler.fit_transform(input_data.data)
+
+
 class TestAnn(unittest.TestCase):
+    def setUp(self) -> None:
+        # get the nmist digits
+        digits = load_digits()
+
+        # scaled data has shape (data_count, 64)
+        self.scaled_data = scale_data(digits.data)
+
+        # lets split our data into training and test bins
+        self.input_training, self.input_testing, self.label_training, self.label_testing = train_test_split(
+            self.scaled_data, digits.target, test_size=0.4)
+
+        # lets convert our target labels to be in vector form.  The labels are just 3, 4, etc -- whatever the digit
+        # is.  Lets convert the output to a 10 deep array with elements zero except for the digit which is 1
+        # output will have shape (data_count, 10)
+        self.output_training = numpy.zeros((len(self.label_training), 10))
+        for label_index, label in enumerate(self.label_training):
+            self.output_training[label_index, label] = 1
+
+        self.output_testing = numpy.zeros((len(self.label_testing), 10))
+        for label_index, label in enumerate(self.label_testing):
+            self.output_testing[label_index, label] = 1
+
+
+
+
+
     def test_brute_force_feed_forward(self):
         # assume a 3 layer network (3,3,1)
         # each row in the matrix represents the weights coming into one particular node in the next layer
