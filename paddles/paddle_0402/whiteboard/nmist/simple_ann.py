@@ -13,6 +13,8 @@ logger = logging_configurator.get_logger(__name__)
 
 class SimpleNeuralNetwork(Ann):
     """
+    With 3000 iterations, this gives 86% prediction accuracy.
+
     This is as simple as it gets.  Back propogation is based upon minimizing the overall cost across all samples:
     COST = (1/2) * (1/sample_count) SUM_OVER_SAMPES_Z[(abs(label - predicted)^2
     """

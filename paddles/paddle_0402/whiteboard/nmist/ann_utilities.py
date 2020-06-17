@@ -246,9 +246,6 @@ for label_index, label in enumerate(label_testing):
     output_testing[label_index, label] = 1
 
 class Ann(ABC):
-    """
-    With 3000 iterations, this gives around 87% prediction accuracy
-    """
     def __init__(self):
         self.avg_cost_for_iterations: list = []
 
