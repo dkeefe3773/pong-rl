@@ -43,6 +43,13 @@ class RegularizedNeuralNetwork(SimpleNeuralNetwork):
 
     def _adjust_weights(self, gradient_for_weights: Dict[int, numpy.ndarray],
                         gradient_for_bias: Dict[int, numpy.ndarray]) -> None:
+        """
+        This adjusts the weights according to a regularization optimzation function, whereby the cost to minimize
+        contains an additional term to minimize the quadrature of all weights in the network.
+        :param gradient_for_weights:   a dict whose key is network layer and whose value is a weight matrix
+        :param gradient_for_bias:  a dict whose key is the network layer and whose value is the vector of gradients
+        :return:
+        """
         for layer_index in range(self.num_layers - 1, 0, -1):
             self.weight_matrix_by_layer[layer_index] += -self.step_size * (
                     1.0 / len(output_training) * gradient_for_weights[layer_index] + self.regularization_lambda *

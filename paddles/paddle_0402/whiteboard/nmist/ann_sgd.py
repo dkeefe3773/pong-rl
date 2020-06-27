@@ -4,24 +4,37 @@ import numpy
 
 from config import logging_configurator
 from paddles.paddle_0402.config.paddle_configurator import nmist_raw_ann_config
-from paddles.paddle_0402.whiteboard.nmist.ann_utilities import Ann, output_training, \
-    initialize_gradient_weight_accumulation_matrices, initialize_bias_accumulation_vectors, input_training, \
-    brute_force_feed_forward, calculate_outer_layer_gradient, calculate_previous_layer_gradient, plot_cost_function
+from paddles.paddle_0402.whiteboard.nmist.ann_regularized import RegularizedNeuralNetwork
+from paddles.paddle_0402.whiteboard.nmist.ann_utilities import output_training, \
+    plot_cost_function, initialize_gradient_weight_accumulation_matrices, initialize_bias_accumulation_vectors, \
+    input_training, brute_force_feed_forward, calculate_outer_layer_gradient, calculate_previous_layer_gradient
+from paddles.paddle_0402.whiteboard.nmist.simple_ann import SimpleNeuralNetwork
 
 logger = logging_configurator.get_logger(__name__)
 
 
-class SimpleNeuralNetwork(Ann):
+class StochasticGradientDescent(RegularizedNeuralNetwork):
     """
-    With 3000 iterations, this gives 86% prediction accuracy.
+    see: https://adventuresinmachinelearning.com/stochastic-gradient-descent/
+    A traditional ANN updates an aggregated cost term, without updating the weights of the network, by looping through
+    all training points and applying gradient descent for each point.  However, this is done by holding the weights
+    of the network static.  Only after all training points have been applied will the weights of the network be
+    updated in gross.  Then the next iteration is started that does the same thing and so on.
 
-    This is as simple as it gets.  Back propogation is based upon minimizing the overall cost across all samples:
-    COST = (1/2) * (1/sample_count) SUM_OVER_SAMPES_Z[(abs(label - predicted)^2
+    However, it has been shown that you get better performance if you update the weights of the network, in mass, for every
+    single point.  So rather than caching an aggregated cost term that is applied at the end of an iteration to
+    adjust the weights, the network weights are adjusted at the time of the back propagation of every training
+    datum.
+
+    This technique is called 'stochastic gradient descent'.  Stochastic because the draw order of the data in the
+    training set is supposed to be random for every iteration.  (We won't do that below, but even without the
+    shuffled draw from iteration to iteration, updating weights every sample point still improves results)
+
+    This gives about 95% prediction accuracy.
     """
+
     def __init__(self) -> None:
         super().__init__()
-        self.num_training_iterations: int = nmist_raw_ann_config.training_iterations
-        self.step_size: float = nmist_raw_ann_config.gradient_step_size
 
     def train(self):
         num_samples = len(output_training)
@@ -66,29 +79,14 @@ class SimpleNeuralNetwork(Ann):
                             layer_outputs[layer_index][:, numpy.newaxis]))
                     gradient_for_bias[layer_index] += gradients_by_layer[layer_index + 1]
 
-            # adjust the weights along their gradients by the step size
-            self._adjust_weights(gradient_for_weights, gradient_for_bias)
+                # adjust the weights along their gradients by the step size due to this single sample
+                self._adjust_weights(gradient_for_weights, gradient_for_bias)
+
             avg_cost_for_iteration /= num_samples
             self.avg_cost_for_iterations.append(avg_cost_for_iteration)
 
-    def _adjust_weights(self, gradient_for_weights: Dict[int, numpy.ndarray],
-                        gradient_for_bias: Dict[int, numpy.ndarray]) -> None:
-        """
-        This adjusts the weights according to the optimization function to minimize the quadrature of
-        residuals from predicted to labeled, normalized by the sample data count
-        :param gradient_for_weights:  a dict whose key is the network layer and whose value is a weight matrix
-        :param gradient_for_bias:  a dict whose key is the network layer and whose value is vector of bias gradients
-        :return:
-        """
-        for layer_index in range(self.num_layers - 1, 0, -1):
-            self.weight_matrix_by_layer[layer_index] += -self.step_size * (
-                    1.0 / len(output_training) * gradient_for_weights[layer_index])
-            self.bias_by_layer[layer_index] += -self.step_size * (
-                    1.0 / len(output_training) * gradient_for_bias[layer_index])
-
-
 if __name__ == "__main__":
-    neural_network = SimpleNeuralNetwork()
+    neural_network = StochasticGradientDescent()
     neural_network.train()
     neural_network.evalulate_network()
     plot_cost_function(neural_network.avg_cost_for_iterations)

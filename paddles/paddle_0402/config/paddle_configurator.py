@@ -43,4 +43,8 @@ class NmistRawAnnConfig(Config):
     def training_iterations(self) -> int:
         return Config.get_property_int('nmist_raw_ann', 'num_training_iterations')
 
+    @property
+    def mini_batch_size(self) -> int:
+        return Config.get_property_int('nmist_raw_ann', 'mini_batch_size')
+
 nmist_raw_ann_config = NmistRawAnnConfig()

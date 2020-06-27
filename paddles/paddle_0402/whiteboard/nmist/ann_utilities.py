@@ -3,6 +3,7 @@ from typing import List, Dict, Tuple
 
 import numpy
 from matplotlib import pylab
+from numpy import random
 from sklearn.datasets import load_digits
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
@@ -221,6 +222,31 @@ def calculate_previous_layer_gradient(gradient_next_layer: numpy.ndarray,
     return numpy.dot(numpy.transpose(weight_matrix), gradient_next_layer) * sigmoid_derivative(incoming_aggregation)
 
 
+def create_mini_batches(input_samples: numpy.ndarray, output_samples: numpy.ndarray, batch_size: int) -> List[
+    Tuple[numpy.ndarray, numpy.ndarray]]:
+    """
+    :param input_samples: matrix whose rows are training input samples
+    :param training_samples: matrix whose rows are training output samples
+    :param batch_size: the number of samples per mini-batch
+    :return: a list of mini-batches.  Each list element is a 2-tuple whose first element is the input samples and
+    whose second element are the associated output samples.  Each mini-batches input/output samples are of size
+    batch_size
+    """
+    num_samples = len(output_samples)
+
+    # random_ids will be a random list of sample ids
+    random_ids = random.choice(num_samples, num_samples, replace=False)
+
+    # now to shuffle the samples
+    input_samples_shuffled = input_samples[random_ids, :]
+    output_samples_shuffled = output_samples[random_ids, :]
+    mini_batches = [(input_samples_shuffled[index:index + batch_size],
+                     output_samples_shuffled[index:index + batch_size])
+                    for index in range(0, num_samples, batch_size)]
+    return mini_batches
+
+
+
 # load the nmist data
 logger.info("Loading nmist data")
 digits = load_digits()
@@ -244,6 +270,7 @@ for label_index, label in enumerate(label_training):
 output_testing = numpy.zeros((len(label_testing), 10))
 for label_index, label in enumerate(label_testing):
     output_testing[label_index, label] = 1
+
 
 class Ann(ABC):
     def __init__(self):
