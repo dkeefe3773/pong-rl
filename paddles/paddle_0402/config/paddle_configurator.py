@@ -47,4 +47,19 @@ class NmistRawAnnConfig(Config):
     def mini_batch_size(self) -> int:
         return Config.get_property_int('nmist_raw_ann', 'mini_batch_size')
 
+class TorchNMist(Config):
+    @property
+    def epochs(self) -> int:
+        return Config.get_property_int('torch_nmist', 'epochs')
+
+    @property
+    def batch_size(self) -> int:
+        return Config.get_property_int('torch_nmist', 'batch_size')
+
+    @property
+    def learning_rate(self) -> float:
+        return Config.get_property_float('torch_nmist', 'learning_rate')
+
+
+
 nmist_raw_ann_config = NmistRawAnnConfig()

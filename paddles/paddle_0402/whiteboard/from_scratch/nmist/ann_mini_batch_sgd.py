@@ -2,8 +2,8 @@ import numpy
 
 from config import logging_configurator
 from paddles.paddle_0402.config.paddle_configurator import nmist_raw_ann_config
-from paddles.paddle_0402.whiteboard.nmist.ann_regularized import RegularizedNeuralNetwork
-from paddles.paddle_0402.whiteboard.nmist.ann_utilities import output_training, \
+from paddles.paddle_0402.whiteboard.from_scratch.nmist.ann_regularized import RegularizedNeuralNetwork
+from paddles.paddle_0402.whiteboard.from_scratch.nmist import output_training, \
     plot_cost_function, initialize_gradient_weight_accumulation_matrices, initialize_bias_accumulation_vectors, \
     input_training, brute_force_feed_forward, calculate_outer_layer_gradient, calculate_previous_layer_gradient, \
     create_mini_batches

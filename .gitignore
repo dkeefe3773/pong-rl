@@ -209,4 +209,10 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
+# data for the pong project
+data/
+
+# for vim text files
+*.swp
+
 # End of https://www.gitignore.io/api/linux,p

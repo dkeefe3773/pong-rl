@@ -4,9 +4,9 @@ import numpy
 
 from config import logging_configurator
 from paddles.paddle_0402.config.paddle_configurator import nmist_raw_ann_config
-from paddles.paddle_0402.whiteboard.nmist.ann_utilities import output_training, \
+from paddles.paddle_0402.whiteboard.from_scratch.nmist import output_training, \
     plot_cost_function
-from paddles.paddle_0402.whiteboard.nmist.simple_ann import SimpleNeuralNetwork
+from paddles.paddle_0402.whiteboard.from_scratch.nmist import SimpleNeuralNetwork
 
 logger = logging_configurator.get_logger(__name__)
 
