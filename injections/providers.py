@@ -15,6 +15,7 @@ from gameengine.paddle_to_wall_collision import PaddleWallCollider
 from gamerender.pongrenders import DefaultPongRenderer
 from gameserver.pong_server import PongServer
 from gameserver.pong_servicer import DummyPongServicer, DefaultPongServicer
+from paddles.nate_paddles.simple_dqn_paddle import SimpleDQNTrainingPaddle, SimpleDQNTrainedPaddle
 from paddles.paddle import StationaryPaddle, FollowTheBallPaddle, AlwaysDownPaddle, AlwaysUpPaddle, \
     EnhancedFollowTheBallPaddle
 from player.controller import PlayerController
@@ -45,6 +46,9 @@ class PaddleProviders(containers.DeclarativeContainer):
                                                               paddle_type=PaddleType.RIGHT,
                                                               mirror_image=True)
 
+    # switch between SimpleDQNTrainingPaddle and SimpleDQNTrainedPaddle for model training and model loading mode
+    left_simple_training_dqn = providers.Factory(SimpleDQNTrainedPaddle,
+                                                 paddle_type=PaddleType.LEFT)
 
 class PlayerProviders(containers.DeclarativeContainer):
     """
@@ -53,7 +57,7 @@ class PlayerProviders(containers.DeclarativeContainer):
     left_player = providers.Singleton(PlayerController,
                                       name=property_configurator.player_config.left_player_name,
                                       paddle_type=PaddleType.LEFT,
-                                      paddle_controller=PaddleProviders.left_follow_the_ball_paddle)
+                                      paddle_controller=PaddleProviders.left_simple_training_dqn)
 
     right_player = providers.Singleton(PlayerController,
                                        name=property_configurator.player_config.right_player_name,
